@@ -7,9 +7,8 @@ services:
     restart: unless-stopped
     env_file: .env
     volumes:
-      - /mnt/storage/data/:/data # Location of Movie library on disk (See note in Application setup)
-      # - /mnt/storage/data/downloads:/data/downloads # Location of download managers output directory (See note in Application setup)
-      - /host/config/radarr:/config # Database and Radarr configs
+      - /mnt/storage/data/:/data # Media
+      - /host/config/radarr:/config # Config files, logs
     ports:
       - 7878:7878/tcp # Web UI
 
@@ -19,9 +18,8 @@ services:
     restart: unless-stopped
     env_file: .env
     volumes:
-      - /mnt/storage/data:/data # Location of all your media
-      # - /mnt/storage/data/downloads:/data/downloads # Location of download managers output directory (See note in Application setup)
-      - /host/config/sonarr:/config # Contains all relevant configuration files.
+      - /mnt/storage/data:/data # Media
+      - /host/config/sonarr:/config # Config files, logs
     ports:
       - 8989:8989/tcp # Web UI
 
@@ -31,7 +29,7 @@ services:
     restart: unless-stopped
     env_file: .env
     volumes:
-      - /host/config/prowlarr:/config
+      - /host/config/prowlarr:/config # Config files, logs
     ports:
       - 9696:9696/tcp # Web UI
  
@@ -41,7 +39,7 @@ services:
     restart: unless-stopped
     env_file: .env
     volumes:
-      - /host/config/requestrr:/root/config # Contains all relevant configuration files.
+      - /host/config/requestrr:/root/config # Config files, logs
     ports:
       - 4545:4545/tcp # Web UI
 
@@ -51,8 +49,8 @@ services:
     restart: unless-stopped
     env_file: .env
     volumes:
-      - /host/config/qbittorrent:/config
-      - /mnt/storage/data:/data
+      - /host/config/qbittorrent:/config # Config files, logs
+      - /mnt/storage/data:/data # Downloads
     ports:
       - 8080:8080 # Web UI
       - 6881:6881
@@ -62,11 +60,11 @@ services:
     image: lscr.io/linuxserver/plex:1.32.7
     container_name: plex
     restart: unless-stopped
-    network_mode: host
+    network_mode: host # For hardware transcoding
     env_file: .env
     environment:
       - VERSION=docker
     volumes:
-      - /mnt/storage/data/media:/data/media
+      - /mnt/storage/data/media:/data/media # Media
     devices:
-      - /dev/dri:/dev/dri
+      - /dev/dri:/dev/dri # Intel QuickSync hardware transcoding
