@@ -1,0 +1,72 @@
+---
+version: "2"
+services:
+  radarr:
+    image: lscr.io/linuxserver/radarr:5.1.3
+    container_name: radarr
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - /mnt/storage/data/:/data # Location of Movie library on disk (See note in Application setup)
+      # - /mnt/storage/data/downloads:/data/downloads # Location of download managers output directory (See note in Application setup)
+      - /host/config/radarr:/config # Database and Radarr configs
+    ports:
+      - 7878:7878/tcp # Web UI
+
+  sonarr:
+    image: lscr.io/linuxserver/sonarr:3.0.10
+    container_name: sonarr
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - /mnt/storage/data:/data # Location of all your media
+      # - /mnt/storage/data/downloads:/data/downloads # Location of download managers output directory (See note in Application setup)
+      - /host/config/sonarr:/config # Contains all relevant configuration files.
+    ports:
+      - 8989:8989/tcp # Web UI
+
+  prowlarr:
+    image: lscr.io/linuxserver/prowlarr:1.9.4
+    container_name: prowlarr
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - /host/config/prowlarr:/config
+    ports:
+      - 9696:9696/tcp # Web UI
+ 
+  requestrr:
+    image: darkalfx/requestrr:v2.1.2
+    container_name: requestrr
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - /host/config/requestrr:/root/config # Contains all relevant configuration files.
+    ports:
+      - 4545:4545/tcp # Web UI
+
+  qbittorrent:
+    image: lscr.io/linuxserver/qbittorrent:4.6.0
+    container_name: qbittorrent
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - /host/config/qbittorrent:/config
+      - /mnt/storage/data:/data
+    ports:
+      - 8080:8080 # Web UI
+      - 6881:6881
+      - 6881:6881/udp
+
+  plex:
+    image: lscr.io/linuxserver/plex:1.32.7
+    container_name: plex
+    restart: unless-stopped
+    network_mode: host
+    env_file: .env
+    environment:
+      - VERSION=docker
+    volumes:
+      - /mnt/storage/data/media:/data/media
+    devices:
+      - /dev/dri:/dev/dri
