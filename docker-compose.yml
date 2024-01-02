@@ -102,15 +102,17 @@ services:
       - 8118:8118
 
   plex:
-    image: lscr.io/linuxserver/plex:1.32.7
+    image: lscr.io/linuxserver/plex:latest
     container_name: plex
     restart: unless-stopped
-    # For hardware transcoding
+    # For ease of remote server availability
     network_mode: host
     env_file: .env
     environment:
       - VERSION=docker
     volumes:
+      # Config files, logs
+      - /host/config/plex:/config
       # Media
       - /mnt/storage/data/media:/data/media
     devices:
