@@ -57,7 +57,7 @@ services:
     # Web UI port exposed in VPN container
  
   requestrr:
-    image: darkalfx/requestrr
+    image: thomst08/requestrr
     container_name: requestrr
     restart: unless-stopped
     # Use VPN network
