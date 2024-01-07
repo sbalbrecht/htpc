@@ -30,6 +30,7 @@ services:
     image: lscr.io/linuxserver/sonarr
     container_name: sonarr
     restart: unless-stopped
+    # Use VPN network
     network_mode: container:qbittorrentvpn
     depends_on:
       - qbittorrentvpn
@@ -83,8 +84,7 @@ services:
       # Config files, logs
       - /host/config/sabnzbd:/config
       # Downloads
-      - /mnt/storage/data/downloads:/downloads
-      - /mnt/storage/data/incomplete:/incomplete-downloads
+      - /mnt/storage/data/:/data
     # Web UI port exposed in VPN container
 
   # VPN Configuration: https://github.com/binhex/documentation/blob/master/docker/faq/vpn.md
