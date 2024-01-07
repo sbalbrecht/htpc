@@ -1,7 +1,7 @@
 ---
-version: "2"
+version: "3"
 secrets:
-  # These files must exist for qBittorrent to run
+  # These files must exist to enable VPN access
   vpn_user:
     # Contains VPN username
     file: /host/config/vpnuser.txt
@@ -14,55 +14,81 @@ services:
     image: lscr.io/linuxserver/radarr
     container_name: radarr
     restart: unless-stopped
+    # Use VPN network
+    network_mode: container:qbittorrentvpn
+    depends_on:
+      - qbittorrentvpn
     env_file: .env
     volumes:
       # Media
       - /mnt/storage/data/:/data 
       # Config files, logs
       - /host/config/radarr:/config
-    ports:
-      # Web UI
-      - 7878:7878/tcp
+    # Web UI port exposed in VPN container
 
   sonarr:
     image: lscr.io/linuxserver/sonarr
     container_name: sonarr
     restart: unless-stopped
+    network_mode: container:qbittorrentvpn
+    depends_on:
+      - qbittorrentvpn
     env_file: .env
     volumes:
       # Media
       - /mnt/storage/data:/data
       # Config files, logs
       - /host/config/sonarr:/config
-    ports:
-      # Web UI
-      - 8989:8989/tcp
+    # Web UI port exposed in VPN container
+
 
   prowlarr:
     image: lscr.io/linuxserver/prowlarr
     container_name: prowlarr
     restart: unless-stopped
+    # Use VPN network
+    network_mode: container:qbittorrentvpn
+    depends_on:
+      - qbittorrentvpn
     env_file: .env
     volumes:
       # Config files, logs
       - /host/config/prowlarr:/config
-    ports:
-      # Web UI
-      - 9696:9696/tcp
+    # Web UI port exposed in VPN container
  
   requestrr:
     image: darkalfx/requestrr
     container_name: requestrr
     restart: unless-stopped
+    # Use VPN network
+    network_mode: container:qbittorrentvpn
+    depends_on:
+      - qbittorrentvpn
     env_file: .env
     volumes:
       # Config files, logs
       - /host/config/requestrr:/root/config
-    ports:
-      # Web UI
-      - 4545:4545/tcp
+    # Web UI port exposed in VPN container
 
-  qbittorrent:
+  sabnzbd:
+    image: lscr.io/linuxserver/sabnzbd
+    container_name: sabnzbd
+    restart: unless-stopped
+    # Use VPN network
+    network_mode: container:qbittorrentvpn
+    depends_on:
+      - qbittorrentvpn
+    env_file: .env
+    volumes:
+      # Config files, logs
+      - /host/config/sabnzbd:/config
+      # Downloads
+      - /mnt/storage/data/downloads:/downloads
+      - /mnt/storage/data/incomplete:/incomplete-downloads
+    # Web UI port exposed in VPN container
+
+  # VPN Configuration: https://github.com/binhex/documentation/blob/master/docker/faq/vpn.md
+  qbittorrentvpn:
     image: binhex/arch-qbittorrentvpn
     container_name: qbittorrentvpn
     restart: unless-stopped
@@ -80,13 +106,16 @@ services:
      - VPN_PROV=airvpn
      - VPN_CLIENT=openvpn
      - ENABLE_PRIVOXY=no
-     # All host IPs for home network in CIDR notation
-     # See Q4 for clarification: https://github.com/binhex/documentation/blob/master/docker/faq/vpn.md
+     # All host IPs for home network in CIDR notation (see A4)
      - LAN_NETWORK=192.168.68.0/22
-     - VPN_INPUT_PORTS=1234
-     - VPN_OUTPUT_PORTS=5678
-     - DEBUG=false
-     - WEBUI_PORT=8080
+     # Web UI ports of containers routed through the VPN (see A24, A25)
+     # Values: SABnzbd, Prowlarr, Sonarr, Radarr, Requestrr
+     - VPN_INPUT_PORTS=8080,9696,8989,7878,4545
+     # Web UI ports of containers on the LAN with which containers on the VPN need to communicate
+     # (see A24, A27)
+     - VPN_OUTPUT_PORTS=
+     # Overridden because SABnzbd cannot be overridden from 8080
+     - WEBUI_PORT=8090
     volumes:
       # Config files, logs
       - /host/config/qbittorrent:/config
@@ -94,33 +123,29 @@ services:
       - /mnt/storage/data:/data
       - /etc/localtime:/etc/localtime:ro
     ports:
-      # Web UI
-      - 8080:8080
       - 6881:6881
       - 6881:6881/udp
-      # Privoxy
+      # qBittorrent Web UI
+      - 8090:8090
+      # Privoxy Web UI
       - 8118:8118
-
-  sabnzbd:
-    image: lscr.io/linuxserver/sabnzbd
-    container_name: sabnzbd
-    restart: unless-stopped
-    env_file: .env
-    volumes:
-      # Config files, logs
-      - /host/config/sabnzbd:/config
-      # Downloads
-      - /mnt/storage/data/downloads:/downloads
-      - /mnt/storage/data/incomplete:/incomplete-downloads
-    ports:
-      # Web UI
-      - 9090:8080
+      # SABnzbd Web UI
+      - 8091:8080
+      # Prowlarr Web UI
+      - 9696:9696/tcp
+      # Sonarr Web UI
+      - 8989:8989/tcp
+      # Radarr Web UI
+      - 7878:7878/tcp
+      # Requestrr Web UI
+      - 4545:4545/tcp
 
   plex:
     image: lscr.io/linuxserver/plex
     container_name: plex
     restart: unless-stopped
-    # For ease of remote server availability
+    # Plex has to be outside the VPN for remote server availability
+    # Host network mode makes remote availability easier to set up
     network_mode: host
     env_file: .env
     environment:
@@ -131,5 +156,5 @@ services:
       # Media
       - /mnt/storage/data/media:/data/media
     devices:
-      # Intel QuickSync hardware transcoding
+      # Expose graphics hardware for hardware transcoding
       - /dev/dri:/dev/dri
