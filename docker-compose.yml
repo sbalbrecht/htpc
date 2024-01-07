@@ -21,7 +21,7 @@ services:
     env_file: .env
     volumes:
       # Media
-      - /mnt/storage/data/:/data 
+      - /mnt/storage/data:/data 
       # Config files, logs
       - /host/config/radarr:/config
     # Web UI port exposed in VPN container
