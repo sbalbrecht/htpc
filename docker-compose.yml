@@ -35,7 +35,7 @@ services:
       # Config files, logs
       - /host/sonarr:/config
     ports:
-        # Web UI
+      # Web UI
       - 8989:8989/tcp
 
   prowlarr:
@@ -47,7 +47,7 @@ services:
       # Config files, logs
       - /host/prowlarr:/config
     ports:
-      # Prowlarr Web UI
+      # Web UI
       - 9696:9696/tcp
 
   requestrr:
