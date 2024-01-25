@@ -4,72 +4,63 @@ secrets:
   # These files must exist to enable VPN access
   vpn_user:
     # Contains VPN username
-    file: /host/config/vpnuser.txt
+    file: /host/vpnuser.txt
   vpn_pass:
     # Contains VPN password
-    file: /host/config/vpnpass.txt
+    file: /host/vpnpass.txt
 
 services:
   radarr:
     image: lscr.io/linuxserver/radarr
     container_name: radarr
     restart: unless-stopped
-    # Use VPN network
-    network_mode: container:qbittorrentvpn
-    depends_on:
-      - qbittorrentvpn
     env_file: .env
     volumes:
       # Media
       - /mnt/storage/data:/data 
       # Config files, logs
-      - /host/config/radarr:/config
-    # Web UI port exposed in VPN container
+      - /host/radarr:/config
+    ports:
+      # Web UI
+      - 7878:7878/tcp
 
   sonarr:
     image: lscr.io/linuxserver/sonarr
     container_name: sonarr
     restart: unless-stopped
-    # Use VPN network
-    network_mode: container:qbittorrentvpn
-    depends_on:
-      - qbittorrentvpn
     env_file: .env
     volumes:
       # Media
       - /mnt/storage/data:/data
       # Config files, logs
-      - /host/config/sonarr:/config
-    # Web UI port exposed in VPN container
-
+      - /host/sonarr:/config
+    ports:
+        # Web UI
+      - 8989:8989/tcp
 
   prowlarr:
     image: lscr.io/linuxserver/prowlarr
     container_name: prowlarr
     restart: unless-stopped
-    # Use VPN network
-    network_mode: container:qbittorrentvpn
-    depends_on:
-      - qbittorrentvpn
     env_file: .env
     volumes:
       # Config files, logs
-      - /host/config/prowlarr:/config
-    # Web UI port exposed in VPN container
- 
+      - /host/prowlarr:/config
+    ports:
+      # Prowlarr Web UI
+      - 9696:9696/tcp
+
   requestrr:
     image: thomst08/requestrr
     container_name: requestrr
     restart: unless-stopped
-    # Use VPN network
-    network_mode: container:qbittorrentvpn
-    depends_on:
-      - qbittorrentvpn
     env_file: .env
     volumes:
       # Config files, logs
-      - /host/config/requestrr:/root/config
-    # Web UI port exposed in VPN container
+      - /host/requestrr:/root/config
+    ports:
+      # Web UI
+      - 4545:4545/tcp
 
   sabnzbd:
     image: lscr.io/linuxserver/sabnzbd
@@ -82,7 +73,7 @@ services:
     env_file: .env
     volumes:
       # Config files, logs
-      - /host/config/sabnzbd:/config
+      - /host/sabnzbd:/config
       # Downloads
       - /mnt/storage/data/:/data
     # Web UI port exposed in VPN container
@@ -109,16 +100,16 @@ services:
      # All host IPs for home network in CIDR notation (see A4)
      - LAN_NETWORK=192.168.68.0/22
      # Web UI ports of containers routed through the VPN (see A24, A25)
-     # Values: SABnzbd, Prowlarr, Sonarr, Radarr, Requestrr
-     - VPN_INPUT_PORTS=8080,9696,8989,7878,4545
+     # Values: SABnzbd
+     - VPN_INPUT_PORTS=8080
      # Web UI ports of containers on the LAN with which containers on the VPN need to communicate
      # (see A24, A27)
      - VPN_OUTPUT_PORTS=
-     # Overridden because SABnzbd cannot be overridden from 8080
+     # Overridden because SABnzbd cannot be overridden from 8080 using environment variables
      - WEBUI_PORT=8090
     volumes:
       # Config files, logs
-      - /host/config/qbittorrent:/config
+      - /host/qbittorrent:/config
       # Downloads
       - /mnt/storage/data:/data
       - /etc/localtime:/etc/localtime:ro
@@ -131,20 +122,11 @@ services:
       - 8118:8118
       # SABnzbd Web UI
       - 8091:8080
-      # Prowlarr Web UI
-      - 9696:9696/tcp
-      # Sonarr Web UI
-      - 8989:8989/tcp
-      # Radarr Web UI
-      - 7878:7878/tcp
-      # Requestrr Web UI
-      - 4545:4545/tcp
 
   plex:
     image: lscr.io/linuxserver/plex
     container_name: plex
     restart: unless-stopped
-    # Plex has to be outside the VPN for remote server availability
     # Host network mode makes remote availability easier to set up
     network_mode: host
     env_file: .env
@@ -152,7 +134,7 @@ services:
       - VERSION=docker
     volumes:
       # Config files, logs
-      - /host/config/plex:/config
+      - /host/plex:/config
       # Media
       - /mnt/storage/data/media:/data/media
     devices:
