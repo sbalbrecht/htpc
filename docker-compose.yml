@@ -1,5 +1,4 @@
 ---
-version: "3"
 secrets:
   # These files must exist to enable VPN access
   vpn_user:
