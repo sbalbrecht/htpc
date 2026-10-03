@@ -165,3 +165,64 @@ services:
       - ./caddy/data:/data
     extra_hosts:
       - host.docker.internal:host-gateway
+
+  # Monitoring: metrics database. Data lives on the SSD (/host), not the
+  # mergerfs pool, so it doesn't keep HDDs awake or churn snapraid parity.
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    restart: unless-stopped
+    user: "1000:1000"
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=365d
+      # Safety net: drop oldest data first if it ever grows past this
+      - --storage.tsdb.retention.size=20GB
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      # Time series data
+      - /host/prometheus:/prometheus
+    extra_hosts:
+      - host.docker.internal:host-gateway
+
+  # Monitoring: host CPU, memory, network, disk I/O, filesystem usage.
+  # Host network/PID namespaces so it sees the real NICs and processes.
+  node-exporter:
+    image: prom/node-exporter
+    container_name: node-exporter
+    restart: unless-stopped
+    network_mode: host
+    pid: host
+    command:
+      - --path.rootfs=/host
+      # Picks up *.prom files written by scripts (e.g. snapraid-nightly.sh)
+      - --collector.textfile.directory=/textfile
+      # Skip docker bridges/veths - hundreds of useless series
+      - --collector.netdev.device-exclude=^(veth.*|br-.*|docker0|lo)$$
+    volumes:
+      - /:/host:ro,rslave
+      - /var/lib/node_exporter:/textfile:ro
+
+  # Monitoring: SMART health of each disk. Needs raw device access.
+  smartctl-exporter:
+    image: prometheuscommunity/smartctl-exporter
+    container_name: smartctl-exporter
+    restart: unless-stopped
+    privileged: true
+    user: root
+
+  # Monitoring: dashboards and alerts
+  grafana:
+    image: grafana/grafana-oss
+    container_name: grafana
+    restart: unless-stopped
+    user: "1000:1000"
+    environment:
+      - GF_SERVER_ROOT_URL=http://grafana.home.arpa
+    volumes:
+      # Dashboards, users, settings
+      - /host/grafana:/var/lib/grafana
+      # Auto-configures the Prometheus data source
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+    # No ports: AdGuard already holds 3000, access via Caddy

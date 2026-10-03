@@ -1,0 +1,1931 @@
+{
+  "uid": "disk-health",
+  "title": "Disk Health",
+  "tags": [
+    "disks",
+    "smart",
+    "snapraid"
+  ],
+  "timezone": "browser",
+  "editable": true,
+  "graphTooltip": 1,
+  "refresh": "5m",
+  "schemaVersion": 39,
+  "time": {
+    "from": "now-7d",
+    "to": "now"
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "datasource",
+        "label": "Data source",
+        "type": "datasource",
+        "query": "prometheus",
+        "current": {},
+        "hide": 0,
+        "refresh": 1
+      }
+    ]
+  },
+  "annotations": {
+    "list": []
+  },
+  "panels": [
+    {
+      "type": "row",
+      "title": "Overview",
+      "id": 1,
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Disks failing SMART",
+      "id": 2,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 0,
+        "y": 1
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "refId": "A",
+          "expr": "count(smartctl_device_smart_status == 0) or vector(0)",
+          "legendFormat": "",
+          "format": "time_series",
+          "instant": true,
+          "range": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "noValue": "0",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": null,
+                "color": "green"
+              },
+              {
+                "value": 1,
+                "color": "red"
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "description": "Drives whose SMART overall-health self-assessment is FAILED. Replace immediately."
+    },
+    {
+      "type": "stat",
+      "title": "SATA sector problems",
+      "id": 3,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 4,
+        "y": 1
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "refId": "A",
+          "expr": "sum(smartctl_device_attribute{attribute_value_type=\"raw\", attribute_name=~\"Reallocated_Sector_Ct|Current_Pending_Sector|Offline_Uncorrectable|Reported_Uncorrect\"}) or vector(0)",
+          "legendFormat": "",
+          "format": "time_series",
+          "instant": true,
+          "range": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "noValue": "0",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": null,
+                "color": "green"
+              },
+              {
+                "value": 1,
+                "color": "orange"
+              },
+              {
+                "value": 10,
+                "color": "red"
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "description": "Sum of reallocated, pending, offline-uncorrectable and reported-uncorrectable sectors across all SATA drives. Any non-zero value is worth investigating; a rising value means a dying disk."
+    },
+    {
+      "type": "stat",
+      "title": "SAS defects / uncorrected",
+      "id": 4,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 8,
+        "y": 1
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "refId": "A",
+          "expr": "(sum(smartctl_scsi_grown_defect_list) or vector(0)) + (sum(smartctl_read_total_uncorrected_errors) or vector(0)) + (sum(smartctl_write_total_uncorrected_errors) or vector(0))",
+          "legendFormat": "",
+          "format": "time_series",
+          "instant": true,
+          "range": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "noValue": "0",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": null,
+                "color": "green"
+              },
+              {
+                "value": 1,
+                "color": "orange"
+              },
+              {
+                "value": 10,
+                "color": "red"
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "description": "Grown defect list + uncorrected read/write errors across SAS drives (disk3, parity1). SAS drives don't report ATA attributes; these are their equivalent."
+    },
+    {
+      "type": "stat",
+      "title": "Hottest disk",
+      "id": 5,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 12,
+        "y": 1
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "refId": "A",
+          "expr": "max(smartctl_device_temperature{temperature_type=\"current\"})",
+          "legendFormat": "",
+          "format": "time_series",
+          "instant": true,
+          "range": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "celsius",
+          "noValue": "0",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": null,
+                "color": "green"
+              },
+              {
+                "value": 45,
+                "color": "orange"
+              },
+              {
+                "value": 50,
+                "color": "red"
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "description": "Highest current drive temperature. HDDs are happiest under ~45\u00b0C."
+    },
+    {
+      "type": "stat",
+      "title": "Since last SnapRAID sync",
+      "id": 6,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 16,
+        "y": 1
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "refId": "A",
+          "expr": "time() - snapraid_last_sync_success_timestamp_seconds",
+          "legendFormat": "",
+          "format": "time_series",
+          "instant": true,
+          "range": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "dtdurations",
+          "noValue": "No run yet",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": null,
+                "color": "green"
+              },
+              {
+                "value": 129600,
+                "color": "orange"
+              },
+              {
+                "value": 172800,
+                "color": "red"
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "description": "Time since snapraid-nightly.sh last completed a successful sync. Over 48h means syncs are failing or being aborted (check logs/snapraid-*.log)."
+    },
+    {
+      "type": "stat",
+      "title": "Last SnapRAID run",
+      "id": 7,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 20,
+        "y": 1
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "refId": "A",
+          "expr": "snapraid_sync_aborted * 2 + (snapraid_sync_exit_code != bool 0)",
+          "legendFormat": "",
+          "format": "time_series",
+          "instant": true,
+          "range": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "noValue": "No run yet",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": null,
+                "color": "green"
+              },
+              {
+                "value": 1,
+                "color": "red"
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "OK",
+                  "index": 0
+                },
+                "1": {
+                  "text": "SYNC ERROR",
+                  "index": 1
+                },
+                "2": {
+                  "text": "ABORTED",
+                  "index": 2
+                },
+                "3": {
+                  "text": "ABORTED",
+                  "index": 3
+                }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "description": "Outcome of the most recent nightly run. ABORTED means the mass-deletion safety check refused to sync: run 'snapraid diff' / 'snapraid status' before syncing by hand."
+    },
+    {
+      "type": "table",
+      "title": "Disks",
+      "id": 8,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 18,
+        "x": 0,
+        "y": 5
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "refId": "A",
+          "expr": "(smartctl_device) * on(device) group_left(mountpoint) group by (device, mountpoint) (label_replace(node_filesystem_size_bytes{device=~\"/dev/sd[a-z]+[0-9]+\", mountpoint=~\"/mnt/[^/]+|/\"}, \"device\", \"$1\", \"device\", \"/dev/(sd[a-z]+)[0-9]+\")) or on(device) label_replace(smartctl_device, \"mountpoint\", \"unmounted\", \"\", \"\")",
+          "legendFormat": "{{mountpoint}} ({{device}})",
+          "format": "table",
+          "instant": true,
+          "range": false
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "refId": "B",
+          "expr": "smartctl_device_smart_status",
+          "legendFormat": "{{mountpoint}} ({{device}})",
+          "format": "table",
+          "instant": true,
+          "range": false
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "refId": "C",
+          "expr": "smartctl_device_temperature{temperature_type=\"current\"}",
+          "legendFormat": "{{mountpoint}} ({{device}})",
+          "format": "table",
+          "instant": true,
+          "range": false
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "refId": "D",
+          "expr": "smartctl_device_power_on_seconds",
+          "legendFormat": "{{mountpoint}} ({{device}})",
+          "format": "table",
+          "instant": true,
+          "range": false
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "refId": "E",
+          "expr": "smartctl_device_capacity_bytes",
+          "legendFormat": "{{mountpoint}} ({{device}})",
+          "format": "table",
+          "instant": true,
+          "range": false
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "refId": "F",
+          "expr": "max by (device) (label_replace(1 - node_filesystem_avail_bytes{device=~\"/dev/sd[a-z]+[0-9]+\", mountpoint=~\"/mnt/[^/]+|/\"} / node_filesystem_size_bytes, \"device\", \"$1\", \"device\", \"/dev/(sd[a-z]+)[0-9]+\"))",
+          "legendFormat": "{{mountpoint}} ({{device}})",
+          "format": "table",
+          "instant": true,
+          "range": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Mount"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 126
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Device"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 85
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Serial"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 205
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Protocol"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 92
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "SMART"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 117
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Temp"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 90
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Power-on"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 102
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Capacity"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 102
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Value #B"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "1": {
+                        "text": "PASSED",
+                        "color": "green",
+                        "index": 0
+                      },
+                      "0": {
+                        "text": "FAILED",
+                        "color": "red",
+                        "index": 1
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Value #C"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "celsius"
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "value": null,
+                      "color": "green"
+                    },
+                    {
+                      "value": 45,
+                      "color": "orange"
+                    },
+                    {
+                      "value": 50,
+                      "color": "red"
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Value #D"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "s"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Value #E"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "bytes"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Value #F"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percentunit"
+              },
+              {
+                "id": "min",
+                "value": 0
+              },
+              {
+                "id": "max",
+                "value": 1
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "value": null,
+                      "color": "#5f9e6e"
+                    },
+                    {
+                      "value": 0.85,
+                      "color": "orange"
+                    },
+                    {
+                      "value": 0.95,
+                      "color": "red"
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "gauge",
+                  "mode": "basic"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "sortBy": [
+          {
+            "displayName": "Mount",
+            "desc": false
+          }
+        ]
+      },
+      "description": "One row per physical disk. Device letters (sdX) can change after a reboot; Mount and Serial don't.",
+      "transformations": [
+        {
+          "id": "joinByField",
+          "options": {
+            "byField": "device",
+            "mode": "outer"
+          }
+        },
+        {
+          "id": "filterFieldsByName",
+          "options": {
+            "include": {
+              "names": [
+                "mountpoint",
+                "device",
+                "model_name",
+                "serial_number",
+                "protocol",
+                "Value #B",
+                "Value #C",
+                "Value #D",
+                "Value #E",
+                "Value #F"
+              ]
+            }
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "indexByName": {
+              "mountpoint": 0,
+              "device": 1,
+              "model_name": 2,
+              "serial_number": 3,
+              "protocol": 4,
+              "Value #B": 5,
+              "Value #C": 6,
+              "Value #D": 7,
+              "Value #E": 8,
+              "Value #F": 9
+            },
+            "renameByName": {
+              "mountpoint": "Mount",
+              "device": "Device",
+              "model_name": "Model",
+              "serial_number": "Serial",
+              "protocol": "Protocol",
+              "Value #B": "SMART",
+              "Value #C": "Temp",
+              "Value #D": "Power-on",
+              "Value #E": "Capacity",
+              "Value #F": "Used"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "bargauge",
+      "title": "Filesystem usage",
+      "id": 9,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 6,
+        "x": 18,
+        "y": 5
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "refId": "A",
+          "expr": "1 - node_filesystem_avail_bytes{mountpoint=~\"/mnt/[^/]+|/\"} / node_filesystem_size_bytes",
+          "legendFormat": "{{mountpoint}}",
+          "format": "time_series",
+          "instant": true,
+          "range": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1,
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": null,
+                "color": "#5f9e6e"
+              },
+              {
+                "value": 0.85,
+                "color": "orange"
+              },
+              {
+                "value": 0.95,
+                "color": "red"
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "displayMode": "basic",
+        "orientation": "horizontal",
+        "showUnfilled": true,
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "description": "Per-disk and pool usage. mergerfs stops placing new files on a branch at minfreespace (200G)."
+    },
+    {
+      "type": "row",
+      "title": "Temperature",
+      "id": 10,
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 15
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Drive temperature",
+      "id": 11,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 16
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "refId": "A",
+          "expr": "(smartctl_device_temperature{temperature_type=\"current\"}) * on(device) group_left(mountpoint) group by (device, mountpoint) (label_replace(node_filesystem_size_bytes{device=~\"/dev/sd[a-z]+[0-9]+\", mountpoint=~\"/mnt/[^/]+|/\"}, \"device\", \"$1\", \"device\", \"/dev/(sd[a-z]+)[0-9]+\")) or on(device) label_replace(smartctl_device_temperature{temperature_type=\"current\"}, \"mountpoint\", \"unmounted\", \"\", \"\")",
+          "legendFormat": "{{mountpoint}} ({{device}})",
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "celsius",
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "spanNulls": true,
+            "lineInterpolation": "smooth",
+            "thresholdsStyle": {
+              "mode": "dashed"
+            }
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": null,
+                "color": "transparent"
+              },
+              {
+                "value": 45,
+                "color": "orange"
+              },
+              {
+                "value": 50,
+                "color": "red"
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "Current temperature per drive. Sustained >45\u00b0C shortens HDD life; a single drive running much hotter than its neighbours usually means an airflow problem in that bay."
+    },
+    {
+      "type": "row",
+      "title": "SATA drives (disk1, disk2, OS SSD, unmounted WDs)",
+      "id": 12,
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 24
+      }
+    },
+    {
+      "type": "table",
+      "title": "Critical SATA attributes (raw values)",
+      "id": 13,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 25
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "refId": "A",
+          "expr": "label_join((smartctl_device_attribute{attribute_value_type=\"raw\", attribute_name=~\"Reallocated_Sector_Ct|Current_Pending_Sector|Offline_Uncorrectable|Reported_Uncorrect|UDMA_CRC_Error_Count\"}) * on(device) group_left(mountpoint) group by (device, mountpoint) (label_replace(node_filesystem_size_bytes{device=~\"/dev/sd[a-z]+[0-9]+\", mountpoint=~\"/mnt/[^/]+|/\"}, \"device\", \"$1\", \"device\", \"/dev/(sd[a-z]+)[0-9]+\")) or on(device) label_replace(smartctl_device_attribute{attribute_value_type=\"raw\", attribute_name=~\"Reallocated_Sector_Ct|Current_Pending_Sector|Offline_Uncorrectable|Reported_Uncorrect|UDMA_CRC_Error_Count\"}, \"mountpoint\", \"unmounted\", \"\", \"\"), \"disk\", \" \", \"mountpoint\", \"device\")",
+          "legendFormat": "{{mountpoint}} ({{device}})",
+          "format": "table",
+          "instant": true,
+          "range": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "center",
+            "cellOptions": {
+              "type": "color-text"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": null,
+                "color": "green"
+              },
+              {
+                "value": 1,
+                "color": "red"
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Disk"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "auto"
+                }
+              },
+              {
+                "id": "custom.align",
+                "value": "left"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true
+      },
+      "description": "The attributes that best predict failure. Should all be 0. Reallocated = sectors already swapped for spares; Pending = unreadable sectors awaiting reallocation; UDMA CRC = cable/backplane errors, not the disk itself.",
+      "transformations": [
+        {
+          "id": "groupingToMatrix",
+          "options": {
+            "columnField": "attribute_name",
+            "rowField": "disk",
+            "valueField": "Value"
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "renameByName": {
+              "disk\\attribute_name": "Disk"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Sector problems over time",
+      "id": 14,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 25
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "refId": "A",
+          "expr": "(smartctl_device_attribute{attribute_value_type=\"raw\", attribute_name=~\"Reallocated_Sector_Ct|Current_Pending_Sector|Offline_Uncorrectable|Reported_Uncorrect\"}) * on(device) group_left(mountpoint) group by (device, mountpoint) (label_replace(node_filesystem_size_bytes{device=~\"/dev/sd[a-z]+[0-9]+\", mountpoint=~\"/mnt/[^/]+|/\"}, \"device\", \"$1\", \"device\", \"/dev/(sd[a-z]+)[0-9]+\")) or on(device) label_replace(smartctl_device_attribute{attribute_value_type=\"raw\", attribute_name=~\"Reallocated_Sector_Ct|Current_Pending_Sector|Offline_Uncorrectable|Reported_Uncorrect\"}, \"mountpoint\", \"unmounted\", \"\", \"\")",
+          "legendFormat": "{{mountpoint}} ({{device}}) {{attribute_name}}",
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "spanNulls": true,
+            "lineInterpolation": "stepAfter"
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "Trend matters more than the number: a count that keeps climbing means the disk is failing."
+    },
+    {
+      "type": "timeseries",
+      "title": "UDMA CRC errors (cabling)",
+      "id": 15,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 0,
+        "y": 33
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "refId": "A",
+          "expr": "(smartctl_device_attribute{attribute_value_type=\"raw\", attribute_name=\"UDMA_CRC_Error_Count\"}) * on(device) group_left(mountpoint) group by (device, mountpoint) (label_replace(node_filesystem_size_bytes{device=~\"/dev/sd[a-z]+[0-9]+\", mountpoint=~\"/mnt/[^/]+|/\"}, \"device\", \"$1\", \"device\", \"/dev/(sd[a-z]+)[0-9]+\")) or on(device) label_replace(smartctl_device_attribute{attribute_value_type=\"raw\", attribute_name=\"UDMA_CRC_Error_Count\"}, \"mountpoint\", \"unmounted\", \"\", \"\")",
+          "legendFormat": "{{mountpoint}} ({{device}})",
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "spanNulls": true,
+            "lineInterpolation": "stepAfter"
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "Increases point at a bad SATA cable, breakout cable or backplane slot, not the disk."
+    },
+    {
+      "type": "timeseries",
+      "title": "Power-on hours",
+      "id": 16,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 12,
+        "y": 33
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "refId": "A",
+          "expr": "(smartctl_device_power_on_seconds / 3600) * on(device) group_left(mountpoint) group by (device, mountpoint) (label_replace(node_filesystem_size_bytes{device=~\"/dev/sd[a-z]+[0-9]+\", mountpoint=~\"/mnt/[^/]+|/\"}, \"device\", \"$1\", \"device\", \"/dev/(sd[a-z]+)[0-9]+\")) or on(device) label_replace(smartctl_device_power_on_seconds / 3600, \"mountpoint\", \"unmounted\", \"\", \"\")",
+          "legendFormat": "{{mountpoint}} ({{device}})",
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "h",
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "spanNulls": true,
+            "lineInterpolation": "stepAfter"
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "Drive age. Annual failure rates climb noticeably after ~5 years (~44k hours)."
+    },
+    {
+      "type": "row",
+      "title": "SAS drives (disk3, parity1)",
+      "id": 17,
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 40
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Grown defects",
+      "id": 18,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 0,
+        "y": 41
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "refId": "A",
+          "expr": "(smartctl_scsi_grown_defect_list) * on(device) group_left(mountpoint) group by (device, mountpoint) (label_replace(node_filesystem_size_bytes{device=~\"/dev/sd[a-z]+[0-9]+\", mountpoint=~\"/mnt/[^/]+|/\"}, \"device\", \"$1\", \"device\", \"/dev/(sd[a-z]+)[0-9]+\")) or on(device) label_replace(smartctl_scsi_grown_defect_list, \"mountpoint\", \"unmounted\", \"\", \"\")",
+          "legendFormat": "{{mountpoint}} ({{device}})",
+          "format": "time_series",
+          "instant": true,
+          "range": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "noValue": "0",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": null,
+                "color": "green"
+              },
+              {
+                "value": 1,
+                "color": "orange"
+              },
+              {
+                "value": 50,
+                "color": "red"
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value_and_name",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "description": "Sectors the drive has remapped since leaving the factory (the SAS equivalent of Reallocated_Sector_Ct). A few is OK if stable; any growth is a warning sign."
+    },
+    {
+      "type": "stat",
+      "title": "Uncorrected read errors",
+      "id": 19,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 6,
+        "y": 41
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "refId": "A",
+          "expr": "(smartctl_read_total_uncorrected_errors) * on(device) group_left(mountpoint) group by (device, mountpoint) (label_replace(node_filesystem_size_bytes{device=~\"/dev/sd[a-z]+[0-9]+\", mountpoint=~\"/mnt/[^/]+|/\"}, \"device\", \"$1\", \"device\", \"/dev/(sd[a-z]+)[0-9]+\")) or on(device) label_replace(smartctl_read_total_uncorrected_errors, \"mountpoint\", \"unmounted\", \"\", \"\")",
+          "legendFormat": "{{mountpoint}} ({{device}})",
+          "format": "time_series",
+          "instant": true,
+          "range": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "noValue": "0",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": null,
+                "color": "green"
+              },
+              {
+                "value": 1,
+                "color": "red"
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value_and_name",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "description": "Reads the drive could not recover even with ECC and retries. Should be 0."
+    },
+    {
+      "type": "stat",
+      "title": "Uncorrected write errors",
+      "id": 20,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 12,
+        "y": 41
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "refId": "A",
+          "expr": "(smartctl_write_total_uncorrected_errors) * on(device) group_left(mountpoint) group by (device, mountpoint) (label_replace(node_filesystem_size_bytes{device=~\"/dev/sd[a-z]+[0-9]+\", mountpoint=~\"/mnt/[^/]+|/\"}, \"device\", \"$1\", \"device\", \"/dev/(sd[a-z]+)[0-9]+\")) or on(device) label_replace(smartctl_write_total_uncorrected_errors, \"mountpoint\", \"unmounted\", \"\", \"\")",
+          "legendFormat": "{{mountpoint}} ({{device}})",
+          "format": "time_series",
+          "instant": true,
+          "range": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "noValue": "0",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": null,
+                "color": "green"
+              },
+              {
+                "value": 1,
+                "color": "red"
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value_and_name",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "description": "Writes the drive could not complete. Should be 0."
+    },
+    {
+      "type": "bargauge",
+      "title": "Temperature vs. drive trip point",
+      "id": 21,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 18,
+        "y": 41
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "refId": "A",
+          "expr": "(smartctl_device_temperature{temperature_type=\"current\"} / on(device) smartctl_device_temperature{temperature_type=\"drive_trip\"}) * on(device) group_left(mountpoint) group by (device, mountpoint) (label_replace(node_filesystem_size_bytes{device=~\"/dev/sd[a-z]+[0-9]+\", mountpoint=~\"/mnt/[^/]+|/\"}, \"device\", \"$1\", \"device\", \"/dev/(sd[a-z]+)[0-9]+\")) or on(device) label_replace(smartctl_device_temperature{temperature_type=\"current\"} / on(device) smartctl_device_temperature{temperature_type=\"drive_trip\"}, \"mountpoint\", \"unmounted\", \"\", \"\")",
+          "legendFormat": "{{mountpoint}} ({{device}})",
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": null,
+                "color": "#5f9e6e"
+              },
+              {
+                "value": 0.75,
+                "color": "orange"
+              },
+              {
+                "value": 0.85,
+                "color": "red"
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "displayMode": "basic",
+        "orientation": "horizontal",
+        "showUnfilled": true,
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "description": "SAS drives report the temperature at which they protect themselves (60\u00b0C here). Shown as % of that trip point."
+    },
+    {
+      "type": "timeseries",
+      "title": "Grown defect list over time",
+      "id": 22,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 46
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "refId": "A",
+          "expr": "(smartctl_scsi_grown_defect_list) * on(device) group_left(mountpoint) group by (device, mountpoint) (label_replace(node_filesystem_size_bytes{device=~\"/dev/sd[a-z]+[0-9]+\", mountpoint=~\"/mnt/[^/]+|/\"}, \"device\", \"$1\", \"device\", \"/dev/(sd[a-z]+)[0-9]+\")) or on(device) label_replace(smartctl_scsi_grown_defect_list, \"mountpoint\", \"unmounted\", \"\", \"\")",
+          "legendFormat": "{{mountpoint}} ({{device}})",
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "spanNulls": true,
+            "lineInterpolation": "stepAfter"
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "Should be a flat line. Steps up mean the platters are degrading."
+    },
+    {
+      "type": "timeseries",
+      "title": "ECC-corrected errors per day",
+      "id": 23,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 46
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "refId": "A",
+          "expr": "(increase(smartctl_read_errors_corrected_by_eccdelayed[1d])) * on(device) group_left(mountpoint) group by (device, mountpoint) (label_replace(node_filesystem_size_bytes{device=~\"/dev/sd[a-z]+[0-9]+\", mountpoint=~\"/mnt/[^/]+|/\"}, \"device\", \"$1\", \"device\", \"/dev/(sd[a-z]+)[0-9]+\")) or on(device) label_replace(increase(smartctl_read_errors_corrected_by_eccdelayed[1d]), \"mountpoint\", \"unmounted\", \"\", \"\")",
+          "legendFormat": "{{mountpoint}} ({{device}}) read, delayed",
+          "format": "time_series"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "refId": "B",
+          "expr": "(increase(smartctl_write_errors_corrected_by_eccdelayed[1d])) * on(device) group_left(mountpoint) group by (device, mountpoint) (label_replace(node_filesystem_size_bytes{device=~\"/dev/sd[a-z]+[0-9]+\", mountpoint=~\"/mnt/[^/]+|/\"}, \"device\", \"$1\", \"device\", \"/dev/(sd[a-z]+)[0-9]+\")) or on(device) label_replace(increase(smartctl_write_errors_corrected_by_eccdelayed[1d]), \"mountpoint\", \"unmounted\", \"\", \"\")",
+          "legendFormat": "{{mountpoint}} ({{device}}) write, delayed",
+          "format": "time_series"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "refId": "C",
+          "expr": "(increase(smartctl_read_errors_corrected_by_rereads_rewrites[1d])) * on(device) group_left(mountpoint) group by (device, mountpoint) (label_replace(node_filesystem_size_bytes{device=~\"/dev/sd[a-z]+[0-9]+\", mountpoint=~\"/mnt/[^/]+|/\"}, \"device\", \"$1\", \"device\", \"/dev/(sd[a-z]+)[0-9]+\")) or on(device) label_replace(increase(smartctl_read_errors_corrected_by_rereads_rewrites[1d]), \"mountpoint\", \"unmounted\", \"\", \"\")",
+          "legendFormat": "{{mountpoint}} ({{device}}) read, reread",
+          "format": "time_series"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "refId": "D",
+          "expr": "(increase(smartctl_write_errors_corrected_by_rereads_rewrites[1d])) * on(device) group_left(mountpoint) group by (device, mountpoint) (label_replace(node_filesystem_size_bytes{device=~\"/dev/sd[a-z]+[0-9]+\", mountpoint=~\"/mnt/[^/]+|/\"}, \"device\", \"$1\", \"device\", \"/dev/(sd[a-z]+)[0-9]+\")) or on(device) label_replace(increase(smartctl_write_errors_corrected_by_rereads_rewrites[1d]), \"mountpoint\", \"unmounted\", \"\", \"\")",
+          "legendFormat": "{{mountpoint}} ({{device}}) write, rewrite",
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "spanNulls": true,
+            "lineInterpolation": "smooth"
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "Errors the drive recovered from, but only with extra effort (delayed ECC or retries). Fast ECC corrections are normal and omitted. A rising trend here often precedes grown defects."
+    },
+    {
+      "type": "row",
+      "title": "Activity",
+      "id": 24,
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 54
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Throughput",
+      "id": 25,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 55
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "refId": "A",
+          "expr": "(rate(node_disk_read_bytes_total{device=~\"sd[a-z]+\"}[$__rate_interval])) * on(device) group_left(mountpoint) group by (device, mountpoint) (label_replace(node_filesystem_size_bytes{device=~\"/dev/sd[a-z]+[0-9]+\", mountpoint=~\"/mnt/[^/]+|/\"}, \"device\", \"$1\", \"device\", \"/dev/(sd[a-z]+)[0-9]+\")) or on(device) label_replace(rate(node_disk_read_bytes_total{device=~\"sd[a-z]+\"}[$__rate_interval]), \"mountpoint\", \"unmounted\", \"\", \"\")",
+          "legendFormat": "{{mountpoint}} ({{device}}) read",
+          "format": "time_series"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "refId": "B",
+          "expr": "(-rate(node_disk_written_bytes_total{device=~\"sd[a-z]+\"}[$__rate_interval])) * on(device) group_left(mountpoint) group by (device, mountpoint) (label_replace(node_filesystem_size_bytes{device=~\"/dev/sd[a-z]+[0-9]+\", mountpoint=~\"/mnt/[^/]+|/\"}, \"device\", \"$1\", \"device\", \"/dev/(sd[a-z]+)[0-9]+\")) or on(device) label_replace(-rate(node_disk_written_bytes_total{device=~\"sd[a-z]+\"}[$__rate_interval]), \"mountpoint\", \"unmounted\", \"\", \"\")",
+          "legendFormat": "{{mountpoint}} ({{device}}) write",
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps",
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "spanNulls": true,
+            "lineInterpolation": "smooth"
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "Reads above zero, writes below. Expect parity1 to be busy only during the nightly sync."
+    },
+    {
+      "type": "timeseries",
+      "title": "Busy time",
+      "id": 26,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 55
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "refId": "A",
+          "expr": "(rate(node_disk_io_time_seconds_total{device=~\"sd[a-z]+\"}[$__rate_interval])) * on(device) group_left(mountpoint) group by (device, mountpoint) (label_replace(node_filesystem_size_bytes{device=~\"/dev/sd[a-z]+[0-9]+\", mountpoint=~\"/mnt/[^/]+|/\"}, \"device\", \"$1\", \"device\", \"/dev/(sd[a-z]+)[0-9]+\")) or on(device) label_replace(rate(node_disk_io_time_seconds_total{device=~\"sd[a-z]+\"}[$__rate_interval]), \"mountpoint\", \"unmounted\", \"\", \"\")",
+          "legendFormat": "{{mountpoint}} ({{device}})",
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "spanNulls": true,
+            "lineInterpolation": "smooth"
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "Fraction of time each disk had I/O in flight. Near 100% = that disk is the bottleneck."
+    }
+  ]
+}

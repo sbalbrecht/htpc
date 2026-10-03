@@ -1,0 +1,18 @@
+global:
+  scrape_interval: 30s
+
+scrape_configs:
+  # Host metrics (node-exporter runs on the host network)
+  - job_name: node
+    static_configs:
+      - targets: ['host.docker.internal:9100']
+
+  # SMART values change slowly - no need to poll the disks often
+  - job_name: smartctl
+    scrape_interval: 5m
+    static_configs:
+      - targets: ['smartctl-exporter:9633']
+
+  - job_name: prometheus
+    static_configs:
+      - targets: ['localhost:9090']

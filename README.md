@@ -7,6 +7,7 @@ This docker compose deploys the following applications for a media server automa
 * **Radarr**: Movie automation client
 * **Sonarr**: TV automation client
 * **Requestrr**: Discord bot for easily requesting media away from your LAN
+* **Grafana / Prometheus**: Server monitoring (CPU, memory, network, per-disk SMART health, SnapRAID status) with 365 days of history
 
 ## Considerations
 This compose file assumes quite a lot about your setup. 
@@ -59,3 +60,19 @@ Significant steps include, but are not limited to:
 5. Connect all the apps to one another, including the download clients to the Servarr apps. The containers will be using the Docker bridge network, so their IP will be `<container name>` instead of `localhost`, e.g., `http://prowlarr:4545` or `http://qbittorrentvpn:8080` for SABnzbd.
 
 Refer to the documentation of each application for further configuration steps.
+
+## Monitoring
+Prometheus scrapes `node-exporter` (host stats) and `smartctl-exporter` (SMART data) and keeps 365 days of history in `/host/prometheus` (~4 GB/year). Grafana is at `http://grafana.home.arpa` (first login `admin`/`admin`), with the Prometheus data source provisioned automatically.
+
+One-time host setup:
+```
+sudo mkdir -p /host/prometheus /host/grafana && sudo chown 1000:1000 /host/prometheus /host/grafana
+# Let Prometheus (docker bridge) reach node-exporter on the host
+sudo ufw allow from 172.16.0.0/12 to any port 9100 proto tcp
+```
+
+`scripts/snapraid-nightly.sh` writes `snapraid_*` metrics to `/var/lib/node_exporter/snapraid.prom` after each run, e.g. alert on `time() - snapraid_last_sync_success_timestamp_seconds > 172800` (no successful sync in 48h).
+
+The *Disk Health* dashboard (SMART status, temperatures, SATA sector counts, SAS grown defects/ECC errors, SnapRAID sync status) is provisioned from `grafana/provisioning/dashboards/json/disk-health.json` and appears automatically on a fresh deploy. Changes made in the Grafana UI are only stored in Grafana's database and are overwritten whenever the JSON file changes. To keep a UI edit, export it (*Dashboard > Export > Export as JSON*, with "Export for sharing externally" off) and replace the file in the repo.
+
+Suggested host dashboard: *Node Exporter Full* (grafana.com ID 1860) via *Dashboards > New > Import*.
