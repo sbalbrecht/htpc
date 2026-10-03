@@ -7,6 +7,13 @@ secrets:
   vpn_pass:
     # Contains VPN password
     file: /host/vpnpass.txt
+  # These files must exist for Grafana alerting
+  discord_webhook:
+    # Contains Discord webhook URL for alerts
+    file: /host/discord_webhook.txt
+  healthchecks_url:
+    # Contains healthchecks.io ping URL (dead-man's switch)
+    file: /host/healthchecks_url.txt
 
 services:
   radarr:
@@ -218,6 +225,11 @@ services:
     container_name: grafana
     restart: unless-stopped
     user: "1000:1000"
+    secrets:
+      - discord_webhook
+      - healthchecks_url
+    # Load alert destination URLs from secrets for the alerting provisioning files
+    entrypoint: [ '/bin/bash', '-c', 'export DISCORD_WEBHOOK_URL=$$(cat /run/secrets/discord_webhook) ; export HEALTHCHECKS_URL=$$(cat /run/secrets/healthchecks_url) ; exec /run.sh' ]
     environment:
       - GF_SERVER_ROOT_URL=http://grafana.home.arpa
     volumes:

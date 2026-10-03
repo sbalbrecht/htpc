@@ -1,0 +1,24 @@
+# Which alerts go where, and how often they repeat while still firing.
+apiVersion: 1
+
+policies:
+  - orgId: 1
+    receiver: Discord
+    group_by: ['grafana_folder', 'alertname']
+    group_wait: 30s
+    group_interval: 5m
+    # Warnings repeat once a day until fixed
+    repeat_interval: 24h
+    routes:
+      # Heartbeat only goes to healthchecks.io, re-sent every ~5 minutes
+      - receiver: Healthchecks
+        object_matchers:
+          - ['heartbeat', '=', 'true']
+        group_wait: 0s
+        group_interval: 1m
+        repeat_interval: 5m
+      # Critical alerts repeat every 4 hours until fixed
+      - receiver: Discord
+        object_matchers:
+          - ['severity', '=', 'critical']
+        repeat_interval: 4h

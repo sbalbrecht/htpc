@@ -1,0 +1,507 @@
+# Grafana alert rules, loaded on startup. Edit here, not in the Grafana UI
+# (provisioned rules are read-only there), then: docker compose restart grafana
+#
+# Each rule runs query A against Prometheus and fires when condition C holds.
+# Messages use .Labels / .Values (e.g. {{ .Labels.mountpoint }}).
+apiVersion: 1
+groups:
+- orgId: 1
+  name: Disks
+  folder: Server alerts
+  interval: 1m
+  rules:
+  - uid: smart-failed
+    title: Drive failing SMART
+    condition: C
+    data:
+    - refId: A
+      relativeTimeRange:
+        from: 600
+        to: 0
+      datasourceUid: prometheus
+      model:
+        refId: A
+        expr: (1 - smartctl_device_smart_status) * on(device) group_left(mountpoint) group by (device, mountpoint) (label_replace(node_filesystem_size_bytes{device=~"/dev/sd[a-z]+[0-9]+", mountpoint=~"/mnt/[^/]+|/"}, "device", "$1", "device", "/dev/(sd[a-z]+)[0-9]+")) or on(device) label_replace(1 - smartctl_device_smart_status, "mountpoint", "unmounted", "", "")
+        instant: true
+    - refId: C
+      datasourceUid: __expr__
+      model:
+        refId: C
+        type: threshold
+        expression: A
+        conditions:
+        - evaluator:
+            type: gt
+            params:
+            - 0
+    for: 0s
+    noDataState: OK
+    execErrState: Error
+    labels:
+      severity: critical
+    annotations:
+      summary: "{{ .Labels.mountpoint }} ({{ .Labels.device }}) reports SMART health FAILED"
+      description: The drive's own self-assessment says it is failing. Replace it; check 'snapraid status' and make sure the last sync was good.
+  - uid: sata-bad-sectors
+    title: New bad sectors (SATA)
+    condition: C
+    data:
+    - refId: A
+      relativeTimeRange:
+        from: 600
+        to: 0
+      datasourceUid: prometheus
+      model:
+        refId: A
+        expr: ((smartctl_device_attribute{attribute_value_type="raw", attribute_name=~"Reallocated_Sector_Ct|Current_Pending_Sector|Offline_Uncorrectable|Reported_Uncorrect"} - min_over_time(smartctl_device_attribute{attribute_value_type="raw", attribute_name=~"Reallocated_Sector_Ct|Current_Pending_Sector|Offline_Uncorrectable|Reported_Uncorrect"}[24h]))) * on(device) group_left(mountpoint) group by (device, mountpoint) (label_replace(node_filesystem_size_bytes{device=~"/dev/sd[a-z]+[0-9]+", mountpoint=~"/mnt/[^/]+|/"}, "device", "$1", "device", "/dev/(sd[a-z]+)[0-9]+")) or on(device) label_replace((smartctl_device_attribute{attribute_value_type="raw", attribute_name=~"Reallocated_Sector_Ct|Current_Pending_Sector|Offline_Uncorrectable|Reported_Uncorrect"} - min_over_time(smartctl_device_attribute{attribute_value_type="raw", attribute_name=~"Reallocated_Sector_Ct|Current_Pending_Sector|Offline_Uncorrectable|Reported_Uncorrect"}[24h])), "mountpoint", "unmounted", "", "")
+        instant: true
+    - refId: C
+      datasourceUid: __expr__
+      model:
+        refId: C
+        type: threshold
+        expression: A
+        conditions:
+        - evaluator:
+            type: gt
+            params:
+            - 0
+    for: 0s
+    noDataState: OK
+    execErrState: Error
+    labels:
+      severity: critical
+    annotations:
+      summary: "{{ .Labels.mountpoint }} ({{ .Labels.device }}): {{ .Labels.attribute_name }} went up by {{ .Values.A.Value }} in the last 24h"
+      description: New damaged sectors. One-off increases happen; a count that keeps climbing means the drive is failing. Watch the Disk Health dashboard and plan a replacement.
+  - uid: sas-grown-defects
+    title: New grown defects (SAS)
+    condition: C
+    data:
+    - refId: A
+      relativeTimeRange:
+        from: 600
+        to: 0
+      datasourceUid: prometheus
+      model:
+        refId: A
+        expr: ((smartctl_scsi_grown_defect_list - min_over_time(smartctl_scsi_grown_defect_list[24h]))) * on(device) group_left(mountpoint) group by (device, mountpoint) (label_replace(node_filesystem_size_bytes{device=~"/dev/sd[a-z]+[0-9]+", mountpoint=~"/mnt/[^/]+|/"}, "device", "$1", "device", "/dev/(sd[a-z]+)[0-9]+")) or on(device) label_replace((smartctl_scsi_grown_defect_list - min_over_time(smartctl_scsi_grown_defect_list[24h])), "mountpoint", "unmounted", "", "")
+        instant: true
+    - refId: C
+      datasourceUid: __expr__
+      model:
+        refId: C
+        type: threshold
+        expression: A
+        conditions:
+        - evaluator:
+            type: gt
+            params:
+            - 0
+    for: 0s
+    noDataState: OK
+    execErrState: Error
+    labels:
+      severity: critical
+    annotations:
+      summary: "{{ .Labels.mountpoint }} ({{ .Labels.device }}): grown defect list went up by {{ .Values.A.Value }} in the last 24h"
+      description: The SAS drive remapped more bad sectors. A growing list means the platters are degrading. Watch the trend and plan a replacement.
+  - uid: sas-uncorrected
+    title: New uncorrected errors (SAS)
+    condition: C
+    data:
+    - refId: A
+      relativeTimeRange:
+        from: 600
+        to: 0
+      datasourceUid: prometheus
+      model:
+        refId: A
+        expr: ((smartctl_read_total_uncorrected_errors - min_over_time(smartctl_read_total_uncorrected_errors[24h])) + on(device) (smartctl_write_total_uncorrected_errors - min_over_time(smartctl_write_total_uncorrected_errors[24h]))) * on(device) group_left(mountpoint) group by (device, mountpoint) (label_replace(node_filesystem_size_bytes{device=~"/dev/sd[a-z]+[0-9]+", mountpoint=~"/mnt/[^/]+|/"}, "device", "$1", "device", "/dev/(sd[a-z]+)[0-9]+")) or on(device) label_replace((smartctl_read_total_uncorrected_errors - min_over_time(smartctl_read_total_uncorrected_errors[24h])) + on(device) (smartctl_write_total_uncorrected_errors - min_over_time(smartctl_write_total_uncorrected_errors[24h])), "mountpoint", "unmounted", "", "")
+        instant: true
+    - refId: C
+      datasourceUid: __expr__
+      model:
+        refId: C
+        type: threshold
+        expression: A
+        conditions:
+        - evaluator:
+            type: gt
+            params:
+            - 0
+    for: 0s
+    noDataState: OK
+    execErrState: Error
+    labels:
+      severity: critical
+    annotations:
+      summary: "{{ .Labels.mountpoint }} ({{ .Labels.device }}): {{ .Values.A.Value }} new uncorrected read/write errors in the last 24h"
+      description: The drive failed to read or write data even after retries. Treat as failing.
+  - uid: disk-missing
+    title: Disk missing
+    condition: C
+    data:
+    - refId: A
+      relativeTimeRange:
+        from: 600
+        to: 0
+      datasourceUid: prometheus
+      model:
+        refId: A
+        expr: (absent(node_filesystem_size_bytes{mountpoint="/mnt/disk1"}) or absent(node_filesystem_size_bytes{mountpoint="/mnt/disk2"}) or absent(node_filesystem_size_bytes{mountpoint="/mnt/disk3"}) or absent(node_filesystem_size_bytes{mountpoint="/mnt/parity1"})) and on() (up{job="node"} == 1)
+        instant: true
+    - refId: C
+      datasourceUid: __expr__
+      model:
+        refId: C
+        type: threshold
+        expression: A
+        conditions:
+        - evaluator:
+            type: gt
+            params:
+            - 0
+    for: 5m
+    noDataState: OK
+    execErrState: Error
+    labels:
+      severity: critical
+    annotations:
+      summary: "{{ .Labels.mountpoint }} is not mounted"
+      description: "A pool or parity disk dropped out. Do NOT run snapraid sync by hand until it's back: check cables, 'dmesg', and 'lsblk'. (If you add or remove a disk, update this rule's list of mounts.)"
+  - uid: disk-hot
+    title: Drive overheating
+    condition: C
+    data:
+    - refId: A
+      relativeTimeRange:
+        from: 600
+        to: 0
+      datasourceUid: prometheus
+      model:
+        refId: A
+        expr: (smartctl_device_temperature{temperature_type="current"}) * on(device) group_left(mountpoint) group by (device, mountpoint) (label_replace(node_filesystem_size_bytes{device=~"/dev/sd[a-z]+[0-9]+", mountpoint=~"/mnt/[^/]+|/"}, "device", "$1", "device", "/dev/(sd[a-z]+)[0-9]+")) or on(device) label_replace(smartctl_device_temperature{temperature_type="current"}, "mountpoint", "unmounted", "", "")
+        instant: true
+    - refId: C
+      datasourceUid: __expr__
+      model:
+        refId: C
+        type: threshold
+        expression: A
+        conditions:
+        - evaluator:
+            type: gt
+            params:
+            - 50
+    for: 15m
+    noDataState: OK
+    execErrState: Error
+    labels:
+      severity: critical
+    annotations:
+      summary: "{{ .Labels.mountpoint }} ({{ .Labels.device }}) is at {{ .Values.A.Value }}°C"
+      description: Sustained heat over 50°C damages drives. Check fans, airflow and whether something is blocking that bay.
+  - uid: disk-warm
+    title: Drive running warm
+    condition: C
+    data:
+    - refId: A
+      relativeTimeRange:
+        from: 600
+        to: 0
+      datasourceUid: prometheus
+      model:
+        refId: A
+        expr: (smartctl_device_temperature{temperature_type="current"}) * on(device) group_left(mountpoint) group by (device, mountpoint) (label_replace(node_filesystem_size_bytes{device=~"/dev/sd[a-z]+[0-9]+", mountpoint=~"/mnt/[^/]+|/"}, "device", "$1", "device", "/dev/(sd[a-z]+)[0-9]+")) or on(device) label_replace(smartctl_device_temperature{temperature_type="current"}, "mountpoint", "unmounted", "", "")
+        instant: true
+    - refId: C
+      datasourceUid: __expr__
+      model:
+        refId: C
+        type: threshold
+        expression: A
+        conditions:
+        - evaluator:
+            type: gt
+            params:
+            - 45
+    for: 30m
+    noDataState: OK
+    execErrState: Error
+    labels:
+      severity: warning
+    annotations:
+      summary: "{{ .Labels.mountpoint }} ({{ .Labels.device }}) is at {{ .Values.A.Value }}°C"
+      description: Above 45°C for half an hour. Not urgent, but worth checking airflow.
+- orgId: 1
+  name: SnapRAID
+  folder: Server alerts
+  interval: 5m
+  rules:
+  - uid: snapraid-failed
+    title: SnapRAID run failed or aborted
+    condition: C
+    data:
+    - refId: A
+      relativeTimeRange:
+        from: 600
+        to: 0
+      datasourceUid: prometheus
+      model:
+        refId: A
+        expr: snapraid_sync_aborted + (snapraid_sync_exit_code > bool 0)
+        instant: true
+    - refId: C
+      datasourceUid: __expr__
+      model:
+        refId: C
+        type: threshold
+        expression: A
+        conditions:
+        - evaluator:
+            type: gt
+            params:
+            - 0
+    for: 0s
+    noDataState: OK
+    execErrState: Error
+    labels:
+      severity: critical
+    annotations:
+      summary: Last nightly SnapRAID run did not sync
+      description: Either the mass-deletion check aborted the sync, or the sync errored. Read the newest logs/snapraid-*.log and run 'snapraid diff' / 'snapraid status' before syncing by hand.
+  - uid: snapraid-stale
+    title: No SnapRAID sync in 48h
+    condition: C
+    data:
+    - refId: A
+      relativeTimeRange:
+        from: 600
+        to: 0
+      datasourceUid: prometheus
+      model:
+        refId: A
+        expr: (time() - snapraid_last_sync_success_timestamp_seconds) / 3600
+        instant: true
+    - refId: C
+      datasourceUid: __expr__
+      model:
+        refId: C
+        type: threshold
+        expression: A
+        conditions:
+        - evaluator:
+            type: gt
+            params:
+            - 48
+    for: 0s
+    noDataState: OK
+    execErrState: Error
+    labels:
+      severity: critical
+    annotations:
+      summary: "Last successful SnapRAID sync was {{ humanize .Values.A.Value }} hours ago"
+      description: Nightly syncs aren't completing. Check the cron job and the newest logs/snapraid-*.log.
+- orgId: 1
+  name: Host
+  folder: Server alerts
+  interval: 1m
+  rules:
+  - uid: data-disk-space
+    title: Data disk low on space
+    condition: C
+    data:
+    - refId: A
+      relativeTimeRange:
+        from: 600
+        to: 0
+      datasourceUid: prometheus
+      model:
+        refId: A
+        expr: node_filesystem_avail_bytes{mountpoint=~"/mnt/disk[0-9]+"} / 1e9
+        instant: true
+    - refId: C
+      datasourceUid: __expr__
+      model:
+        refId: C
+        type: threshold
+        expression: A
+        conditions:
+        - evaluator:
+            type: lt
+            params:
+            - 300
+    for: 30m
+    noDataState: OK
+    execErrState: Error
+    labels:
+      severity: warning
+    annotations:
+      summary: "{{ .Labels.mountpoint }} has {{ humanize .Values.A.Value }} GB free"
+      description: "mergerfs stops placing new files on a disk at 200 GB free. When every disk gets here the pool is full: prune media or add a disk."
+  - uid: pool-space
+    title: Storage pool filling up
+    condition: C
+    data:
+    - refId: A
+      relativeTimeRange:
+        from: 600
+        to: 0
+      datasourceUid: prometheus
+      model:
+        refId: A
+        expr: 1 - node_filesystem_avail_bytes{mountpoint="/mnt/storage"} / node_filesystem_size_bytes{mountpoint="/mnt/storage"}
+        instant: true
+    - refId: C
+      datasourceUid: __expr__
+      model:
+        refId: C
+        type: threshold
+        expression: A
+        conditions:
+        - evaluator:
+            type: gt
+            params:
+            - 0.9
+    for: 30m
+    noDataState: OK
+    execErrState: Error
+    labels:
+      severity: warning
+    annotations:
+      summary: "The pool is {{ humanizePercentage .Values.A.Value }} full"
+      description: Time to prune media or plan another disk.
+  - uid: os-disk-space
+    title: OS disk filling up
+    condition: C
+    data:
+    - refId: A
+      relativeTimeRange:
+        from: 600
+        to: 0
+      datasourceUid: prometheus
+      model:
+        refId: A
+        expr: 1 - node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}
+        instant: true
+    - refId: C
+      datasourceUid: __expr__
+      model:
+        refId: C
+        type: threshold
+        expression: A
+        conditions:
+        - evaluator:
+            type: gt
+            params:
+            - 0.85
+    for: 30m
+    noDataState: OK
+    execErrState: Error
+    labels:
+      severity: warning
+    annotations:
+      summary: "The OS SSD is {{ humanizePercentage .Values.A.Value }} full"
+      description: "Usual suspects: docker images ('docker system df'), logs/, /host config folders."
+  - uid: low-memory
+    title: Low memory
+    condition: C
+    data:
+    - refId: A
+      relativeTimeRange:
+        from: 600
+        to: 0
+      datasourceUid: prometheus
+      model:
+        refId: A
+        expr: node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes
+        instant: true
+    - refId: C
+      datasourceUid: __expr__
+      model:
+        refId: C
+        type: threshold
+        expression: A
+        conditions:
+        - evaluator:
+            type: lt
+            params:
+            - 0.1
+    for: 15m
+    noDataState: OK
+    execErrState: Error
+    labels:
+      severity: warning
+    annotations:
+      summary: "Only {{ humanizePercentage .Values.A.Value }} of RAM available"
+      description: Something is using far more memory than usual. 'docker stats' shows per-container use.
+  - uid: exporter-down
+    title: Monitoring target down
+    condition: C
+    data:
+    - refId: A
+      relativeTimeRange:
+        from: 600
+        to: 0
+      datasourceUid: prometheus
+      model:
+        refId: A
+        expr: up
+        instant: true
+    - refId: C
+      datasourceUid: __expr__
+      model:
+        refId: C
+        type: threshold
+        expression: A
+        conditions:
+        - evaluator:
+            type: lt
+            params:
+            - 1
+    for: 10m
+    noDataState: OK
+    execErrState: Error
+    labels:
+      severity: warning
+    annotations:
+      summary: "Prometheus can't reach {{ .Labels.job }} ({{ .Labels.instance }})"
+      description: While this is down its alerts can't fire. For 'node', check the ufw rule for port 9100; otherwise 'docker compose ps' and the container's logs.
+- orgId: 1
+  name: Heartbeat
+  folder: Server alerts
+  interval: 1m
+  rules:
+  - uid: heartbeat
+    title: Heartbeat
+    condition: C
+    data:
+    - refId: A
+      relativeTimeRange:
+        from: 600
+        to: 0
+      datasourceUid: prometheus
+      model:
+        refId: A
+        expr: vector(1)
+        instant: true
+    - refId: C
+      datasourceUid: __expr__
+      model:
+        refId: C
+        type: threshold
+        expression: A
+        conditions:
+        - evaluator:
+            type: gt
+            params:
+            - 0
+    for: 0s
+    noDataState: OK
+    execErrState: OK
+    labels:
+      heartbeat: 'true'
+    annotations:
+      summary: Server is up and alerting works
+      description: Sent to healthchecks.io every ~5 minutes. Never sent to Discord.

@@ -71,8 +71,25 @@ sudo mkdir -p /host/prometheus /host/grafana && sudo chown 1000:1000 /host/prome
 sudo ufw allow from 172.16.0.0/12 to any port 9100 proto tcp
 ```
 
-`scripts/snapraid-nightly.sh` writes `snapraid_*` metrics to `/var/lib/node_exporter/snapraid.prom` after each run, e.g. alert on `time() - snapraid_last_sync_success_timestamp_seconds > 172800` (no successful sync in 48h).
+`scripts/snapraid-nightly.sh` writes `snapraid_*` metrics to `/var/lib/node_exporter/snapraid.prom` after each run, which the dashboard and alerts use.
 
 The *Disk Health* dashboard (SMART status, temperatures, SATA sector counts, SAS grown defects/ECC errors, SnapRAID sync status) is provisioned from `grafana/provisioning/dashboards/json/disk-health.json` and appears automatically on a fresh deploy. Changes made in the Grafana UI are only stored in Grafana's database and are overwritten whenever the JSON file changes. To keep a UI edit, export it (*Dashboard > Export > Export as JSON*, with "Export for sharing externally" off) and replace the file in the repo.
 
 Suggested host dashboard: *Node Exporter Full* (grafana.com ID 1860) via *Dashboards > New > Import*.
+
+### Alerting
+Grafana alerts are provisioned from `grafana/provisioning/alerting/`: rules (`rules.yml`), destinations (`contact-points.yml`), routing and repeat intervals (`policies.yml`) and the Discord message format (`templates.yml`). They are read-only in the Grafana UI; edit the files and run `docker compose restart grafana`.
+
+* **Discord** receives the alerts: critical alerts repeat every 4 hours while firing, warnings once a day, plus a message when each clears.
+* **healthchecks.io** is a dead-man's switch. An always-firing *Heartbeat* alert pings it every ~5 minutes; if the pings stop (server down, internet down, Grafana or Prometheus broken), healthchecks.io notifies you.
+
+Both URLs are Docker secrets, like the VPN credentials, and must exist before Grafana will start:
+1. Discord: *Server Settings > Integrations > Webhooks > New Webhook*, pick a channel, copy the URL.
+2. healthchecks.io: create a check with *Period* 5 minutes and *Grace* 10 minutes, copy its ping URL (`https://hc-ping.com/...`), and add the notification method you want under *Integrations*.
+3. Save them:
+   ```
+   echo 'https://discord.com/api/webhooks/...' | sudo tee /host/discord_webhook.txt >/dev/null
+   echo 'https://hc-ping.com/...' | sudo tee /host/healthchecks_url.txt >/dev/null
+   sudo chown 1000:1000 /host/discord_webhook.txt /host/healthchecks_url.txt
+   sudo chmod 600 /host/discord_webhook.txt /host/healthchecks_url.txt
+   ```
