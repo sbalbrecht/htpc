@@ -1,0 +1,6 @@
+# AdGuard Home runtime state (contains admin credentials)
+adguard/conf/
+adguard/work/
+
+# Caddy certificate and runtime state
+caddy/data/
