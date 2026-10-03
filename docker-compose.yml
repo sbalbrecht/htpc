@@ -90,14 +90,14 @@ services:
       - vpn_user
       - vpn_pass
     # Use secrets for VPN_USER, VPN_PASS environment variables
-    entrypoint: [ '/bin/bash', '-c', 'export VPN_USER=$$(cat /var/run/secrets/vpn_user) ; export VPN_PASS=$$(cat /var/run/secrets/vpn_pass) ; source /usr/local/bin/init.sh' ]
+    entrypoint: [ '/bin/bash', '-c', 'export VPN_USER=$$(cat /var/run/secrets/vpn_user) ; export VPN_PASS=$$(cat /var/run/secrets/vpn_pass) ; source /usr/bin/init.sh' ]
     environment:
      - VPN_ENABLED=yes
      - VPN_PROV=airvpn
      - VPN_CLIENT=openvpn
      - ENABLE_PRIVOXY=no
      # All host IPs for home network in CIDR notation (see A4)
-     - LAN_NETWORK=192.168.68.0/22
+     - LAN_NETWORK=192.168.0.22/22
      # Web UI ports of containers routed through the VPN (see A24, A25)
      # Values: SABnzbd
      - VPN_INPUT_PORTS=8080
