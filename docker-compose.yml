@@ -139,3 +139,29 @@ services:
     devices:
       # Expose graphics hardware for hardware transcoding
       - /dev/dri:/dev/dri
+
+  # Local DNS: resolves *.home.arpa to this server
+  adguard:
+    image: adguard/adguardhome
+    container_name: adguard
+    restart: unless-stopped
+    ports:
+      - 53:53/tcp
+      - 53:53/udp
+      - 3000:3000/tcp
+    volumes:
+      - ./adguard/work:/opt/adguardhome/work
+      - ./adguard/conf:/opt/adguardhome/conf
+
+  # Reverse proxy: <service>.home.arpa -> container
+  caddy:
+    image: caddy:2
+    container_name: caddy
+    restart: unless-stopped
+    ports:
+      - 80:80
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./caddy/data:/data
+    extra_hosts:
+      - host.docker.internal:host-gateway

@@ -1,0 +1,27 @@
+http://sonarr.home.arpa {
+    reverse_proxy sonarr:8989
+}
+
+http://radarr.home.arpa {
+    reverse_proxy radarr:7878
+}
+
+http://prowlarr.home.arpa {
+    reverse_proxy prowlarr:9696
+}
+
+http://requestrr.home.arpa {
+    reverse_proxy requestrr:4545
+}
+
+http://qbittorrent.home.arpa {
+    reverse_proxy qbittorrentvpn:8090
+}
+
+http://sabnzbd.home.arpa {
+    reverse_proxy qbittorrentvpn:8080
+}
+
+http://plex.home.arpa {
+    reverse_proxy host.docker.internal:32400
+}
