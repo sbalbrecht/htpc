@@ -102,6 +102,7 @@ Updates are automatic; you're only notified when something fails.
 * It reports to its own healthchecks.io check: silent on success, alerts on failure (including the end of its log) or if a run is missed. Full logs are in `logs/maintenance-*.log`.
 * Prometheus (`v3`) and Grafana (`13.2`) are pinned so the monitoring stack doesn't take major upgrades unattended; bump those tags by hand. Everything else tracks `latest`.
 * To roll back a bad container update, pin the app's previous version tag in `docker-compose.yml` and run `docker compose up -d`.
+* **Hooks:** other projects on the machine can join the weekly run without this repo knowing about them. Put an executable (or a symlink to one) in `/etc/weekly-maintenance.d/`. Hooks run as root in name order, after this repo's containers update and before any reboot. A failing hook is reported but doesn't stop the rest of the run.
 
 One-time host setup:
 1. In healthchecks.io, create a second check with *Period* 7 days and *Grace* 1 day.

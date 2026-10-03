@@ -6,6 +6,12 @@
 # Reports to a healthchecks.io check: success is silent, a failure alerts
 # with the end of this log, and a run that never happens alerts too.
 # Runs as root from cron (see README).
+#
+# Other projects on this machine can join the weekly run without this repo
+# knowing about them: put an executable (or a symlink to one) in HOOK_DIR.
+# Hooks run as root in name order, after this repo's containers are updated
+# and before any reboot. A failing hook is reported, but doesn't stop the
+# remaining hooks, the cleanup or the reboot.
 
 set -u
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
@@ -16,6 +22,8 @@ HC_URL=$(cat /host/healthchecks_maintenance_url.txt 2>/dev/null)
 SNAPRAID_WAIT_MAX=$((4 * 3600))   # give up on this week's run after waiting this long
 SETTLE=180                        # seconds to let containers start before checking them
 LOG_DAYS=60                       # delete maintenance/snapraid logs older than this
+HOOK_DIR=/etc/weekly-maintenance.d
+HOOK_TIMEOUT=30m                  # per hook
 
 log() {
   echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" | tee -a "$LOG"
@@ -60,7 +68,7 @@ apt-get "${APT_OPTS[@]}" autoremove --purge >> "$LOG" 2>&1 || log "autoremove fa
 # Containers: pull new images and recreate whatever changed.
 cd "$REPO" || fail "cannot cd to $REPO"
 log "Updating containers..."
-docker compose pull >> "$LOG" 2>&1 || fail "docker compose pull failed"
+docker compose pull --quiet >> "$LOG" 2>&1 || fail "docker compose pull failed"
 docker compose up -d >> "$LOG" 2>&1 || fail "docker compose up failed"
 
 log "Waiting ${SETTLE}s for containers to settle..."
@@ -76,18 +84,34 @@ done
 [[ -z "$bad" ]] || fail "containers not running after update:$bad"
 log "All containers running."
 
+hook_failures=""
+for hook in "$HOOK_DIR"/*; do
+  [[ -f "$hook" && -x "$hook" ]] || continue
+  name=$(basename "$hook")
+  log "Running hook $name..."
+  if timeout "$HOOK_TIMEOUT" "$hook" >> "$LOG" 2>&1; then
+    log "Hook $name finished."
+  else
+    log "Hook $name FAILED (exit $?)."
+    hook_failures+=" $name"
+  fi
+done
+
 # Cleanup. Old image versions aren't kept: to roll back an app, pin its
 # previous version tag in docker-compose.yml and run docker compose up -d.
 docker image prune -af >> "$LOG" 2>&1 || log "image prune failed (not fatal)"
 find "$REPO/logs" -maxdepth 1 \( -name 'maintenance-*.log' -o -name 'snapraid-*.log' \) \
   -mtime +"$LOG_DAYS" -delete
 
-if [[ -f /var/run/reboot-required ]]; then
-  log "=== weekly maintenance finished, rebooting for updates ==="
+# Report before any reboot: hook failures alert, everything else is silent.
+reboot=false
+[[ -f /var/run/reboot-required ]] && reboot=true
+if [[ -n "$hook_failures" ]]; then
+  log "=== weekly maintenance finished, but hooks failed:$hook_failures ==="
+  hc /fail "$(tail -c 10000 "$LOG")"
+else
+  log "=== weekly maintenance finished$($reboot && echo ', rebooting for updates') ==="
   hc "" "$(tail -c 10000 "$LOG")"
-  systemctl reboot
-  exit 0
 fi
-
-log "=== weekly maintenance finished ==="
-hc "" "$(tail -c 10000 "$LOG")"
+$reboot && systemctl reboot
+[[ -z "$hook_failures" ]]
