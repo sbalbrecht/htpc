@@ -176,7 +176,9 @@ services:
   # Monitoring: metrics database. Data lives on the SSD (/host), not the
   # mergerfs pool, so it doesn't keep HDDs awake or churn snapraid parity.
   prometheus:
-    image: prom/prometheus
+    # Pinned to the major version: updates within v3 apply automatically,
+    # a major upgrade is done by hand (monitoring should be the last thing to break)
+    image: prom/prometheus:v3
     container_name: prometheus
     restart: unless-stopped
     user: "1000:1000"
@@ -221,7 +223,9 @@ services:
 
   # Monitoring: dashboards and alerts
   grafana:
-    image: grafana/grafana-oss
+    # Pinned to a minor version (no major-version tag is published): security
+    # and bug-fix updates apply automatically, bump the version by hand
+    image: grafana/grafana:13.2
     container_name: grafana
     restart: unless-stopped
     user: "1000:1000"

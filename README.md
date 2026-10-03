@@ -93,3 +93,24 @@ Both URLs are Docker secrets, like the VPN credentials, and must exist before Gr
    sudo chown 1000:1000 /host/discord_webhook.txt /host/healthchecks_url.txt
    sudo chmod 600 /host/discord_webhook.txt /host/healthchecks_url.txt
    ```
+
+## Maintenance
+Updates are automatic; you're only notified when something fails.
+
+* **OS security updates** install daily via Ubuntu's `unattended-upgrades`.
+* **`scripts/weekly-maintenance.sh`** runs Wednesdays at 11:00 (after the 03:00 SnapRAID run, waiting for it if it's still going). It installs remaining OS updates, pulls and recreates updated containers, checks every container is running, prunes old images and logs, and reboots if an update requires it.
+* It reports to its own healthchecks.io check: silent on success, alerts on failure (including the end of its log) or if a run is missed. Full logs are in `logs/maintenance-*.log`.
+* Prometheus (`v3`) and Grafana (`13.2`) are pinned so the monitoring stack doesn't take major upgrades unattended; bump those tags by hand. Everything else tracks `latest`.
+* To roll back a bad container update, pin the app's previous version tag in `docker-compose.yml` and run `docker compose up -d`.
+
+One-time host setup:
+1. In healthchecks.io, create a second check with *Period* 7 days and *Grace* 1 day.
+2. As root:
+   ```
+   # Refresh package lists daily so security updates apply within a day
+   sed -i 's/Update-Package-Lists "7"/Update-Package-Lists "1"/' /etc/apt/apt.conf.d/20auto-upgrades
+   echo 'https://hc-ping.com/...' > /host/healthchecks_maintenance_url.txt
+   chmod 600 /host/healthchecks_maintenance_url.txt
+   # Root crontab (crontab -e), alongside the SnapRAID entry:
+   # 0 11 * * 3 /home/steve/server/scripts/weekly-maintenance.sh
+   ```
