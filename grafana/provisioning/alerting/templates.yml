@@ -6,9 +6,6 @@ templates:
   - orgId: 1
     name: server
     template: |
-      {{ define "server.discord" }}**{{ template "server.title" . }}**
-      {{ template "server.message" . }}{{ end }}
-
       {{ define "server.title" }}{{ if gt (len .Alerts.Firing) 0 }}Server alert{{ else }}Resolved{{ end }}{{ end }}
 
       {{ define "server.message" }}
