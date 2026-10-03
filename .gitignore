@@ -6,4 +6,5 @@ adguard/work/
 caddy/data/
 
 # Personal notes, not part of the repo
-local-dns-and-proxy.md
+*.md
+!README.md
