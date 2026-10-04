@@ -21,7 +21,7 @@ LOG=$REPO/logs/maintenance-$(date +%Y%m%d-%H%M%S).log
 HC_URL=$(cat /host/healthchecks_maintenance_url.txt 2>/dev/null)
 SNAPRAID_WAIT_MAX=$((4 * 3600))   # give up on this week's run after waiting this long
 SETTLE=180                        # seconds to let containers start before checking them
-LOG_DAYS=60                       # delete maintenance/snapraid logs older than this
+LOG_DAYS=60                       # delete maintenance/snapraid/backup logs older than this
 HOOK_DIR=/etc/weekly-maintenance.d
 HOOK_TIMEOUT=30m                  # per hook
 
@@ -100,7 +100,7 @@ done
 # Cleanup. Old image versions aren't kept: to roll back an app, pin its
 # previous version tag in docker-compose.yml and run docker compose up -d.
 docker image prune -af >> "$LOG" 2>&1 || log "image prune failed (not fatal)"
-find "$REPO/logs" -maxdepth 1 \( -name 'maintenance-*.log' -o -name 'snapraid-*.log' \) \
+find "$REPO/logs" -maxdepth 1 \( -name 'maintenance-*.log' -o -name 'snapraid-*.log' -o -name 'backup-*.log' \) \
   -mtime +"$LOG_DAYS" -delete
 
 # Report before any reboot: hook failures alert, everything else is silent.

@@ -115,3 +115,8 @@ One-time host setup:
    # Root crontab (crontab -e), alongside the SnapRAID entry:
    # 0 11 * * 3 /home/steve/server/scripts/weekly-maintenance.sh
    ```
+
+## Offsite backup
+`scripts/offsite-backup.sh` runs nightly at 02:00 and uses [restic](https://restic.net) to back up `/host` (app settings and databases), this repo folder (including untracked files like `.env`), `/etc` and the crontabs to Backblaze B2. Media isn't included; SnapRAID covers it. Backups are encrypted on the server and only changes are uploaded. It keeps 7 daily, 4 weekly and 12 monthly snapshots, and on Sundays prunes older ones and reads back a 5% sample. It reports to a third healthchecks.io check (*Period* 1 day, *Grace* 6 hours).
+
+Settings live in `/host/restic.env` (root, `600`) and the ping URL in `/host/healthchecks_backup_url.txt`. Keep a copy of the restic password somewhere other than this server, or the backup can't be opened. `sudo scripts/restic.sh <command>` runs restic with those settings loaded, e.g. `snapshots` or `restore latest --target /tmp/restore`.
