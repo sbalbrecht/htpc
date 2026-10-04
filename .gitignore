@@ -8,3 +8,5 @@ caddy/data/
 # Personal notes, not part of the repo
 *.md
 !README.md
+
+logs/
