@@ -4,6 +4,16 @@
 # Each rule runs query A against Prometheus and fires when condition C holds.
 # Messages use .Labels / .Values (e.g. {{ .Labels.mountpoint }}).
 apiVersion: 1
+# Removing a rule from this file doesn't delete it from Grafana; listing it
+# here does. Bad-sector counts are tracked on the Disk Health dashboard
+# instead of alerting, since they show gradual wear, not an emergency.
+deleteRules:
+- orgId: 1
+  uid: sata-bad-sectors
+- orgId: 1
+  uid: sas-grown-defects
+- orgId: 1
+  uid: sas-uncorrected
 groups:
 - orgId: 1
   name: Disks
@@ -42,102 +52,6 @@ groups:
     annotations:
       summary: "{{ .Labels.mountpoint }} ({{ .Labels.device }}) reports SMART health FAILED"
       description: The drive's own self-assessment says it is failing. Replace it; check 'snapraid status' and make sure the last sync was good.
-  - uid: sata-bad-sectors
-    title: New bad sectors (SATA)
-    condition: C
-    data:
-    - refId: A
-      relativeTimeRange:
-        from: 600
-        to: 0
-      datasourceUid: prometheus
-      model:
-        refId: A
-        expr: ((smartctl_device_attribute{attribute_value_type="raw", attribute_name=~"Reallocated_Sector_Ct|Current_Pending_Sector|Offline_Uncorrectable|Reported_Uncorrect"} - min_over_time(smartctl_device_attribute{attribute_value_type="raw", attribute_name=~"Reallocated_Sector_Ct|Current_Pending_Sector|Offline_Uncorrectable|Reported_Uncorrect"}[24h]))) * on(device) group_left(mountpoint) group by (device, mountpoint) (label_replace(node_filesystem_size_bytes{device=~"/dev/sd[a-z]+[0-9]+", mountpoint=~"/mnt/[^/]+|/"}, "device", "$1", "device", "/dev/(sd[a-z]+)[0-9]+")) or on(device) label_replace((smartctl_device_attribute{attribute_value_type="raw", attribute_name=~"Reallocated_Sector_Ct|Current_Pending_Sector|Offline_Uncorrectable|Reported_Uncorrect"} - min_over_time(smartctl_device_attribute{attribute_value_type="raw", attribute_name=~"Reallocated_Sector_Ct|Current_Pending_Sector|Offline_Uncorrectable|Reported_Uncorrect"}[24h])), "mountpoint", "unmounted", "", "")
-        instant: true
-    - refId: C
-      datasourceUid: __expr__
-      model:
-        refId: C
-        type: threshold
-        expression: A
-        conditions:
-        - evaluator:
-            type: gt
-            params:
-            - 0
-    for: 0s
-    noDataState: OK
-    execErrState: Error
-    labels:
-      severity: critical
-    annotations:
-      summary: "{{ .Labels.mountpoint }} ({{ .Labels.device }}): {{ .Labels.attribute_name }} went up by {{ .Values.A.Value }} in the last 24h"
-      description: New damaged sectors. One-off increases happen; a count that keeps climbing means the drive is failing. Watch the Disk Health dashboard and plan a replacement.
-  - uid: sas-grown-defects
-    title: New grown defects (SAS)
-    condition: C
-    data:
-    - refId: A
-      relativeTimeRange:
-        from: 600
-        to: 0
-      datasourceUid: prometheus
-      model:
-        refId: A
-        expr: ((smartctl_scsi_grown_defect_list - min_over_time(smartctl_scsi_grown_defect_list[24h]))) * on(device) group_left(mountpoint) group by (device, mountpoint) (label_replace(node_filesystem_size_bytes{device=~"/dev/sd[a-z]+[0-9]+", mountpoint=~"/mnt/[^/]+|/"}, "device", "$1", "device", "/dev/(sd[a-z]+)[0-9]+")) or on(device) label_replace((smartctl_scsi_grown_defect_list - min_over_time(smartctl_scsi_grown_defect_list[24h])), "mountpoint", "unmounted", "", "")
-        instant: true
-    - refId: C
-      datasourceUid: __expr__
-      model:
-        refId: C
-        type: threshold
-        expression: A
-        conditions:
-        - evaluator:
-            type: gt
-            params:
-            - 0
-    for: 0s
-    noDataState: OK
-    execErrState: Error
-    labels:
-      severity: critical
-    annotations:
-      summary: "{{ .Labels.mountpoint }} ({{ .Labels.device }}): grown defect list went up by {{ .Values.A.Value }} in the last 24h"
-      description: The SAS drive remapped more bad sectors. A growing list means the platters are degrading. Watch the trend and plan a replacement.
-  - uid: sas-uncorrected
-    title: New uncorrected errors (SAS)
-    condition: C
-    data:
-    - refId: A
-      relativeTimeRange:
-        from: 600
-        to: 0
-      datasourceUid: prometheus
-      model:
-        refId: A
-        expr: ((smartctl_read_total_uncorrected_errors - min_over_time(smartctl_read_total_uncorrected_errors[24h])) + on(device) (smartctl_write_total_uncorrected_errors - min_over_time(smartctl_write_total_uncorrected_errors[24h]))) * on(device) group_left(mountpoint) group by (device, mountpoint) (label_replace(node_filesystem_size_bytes{device=~"/dev/sd[a-z]+[0-9]+", mountpoint=~"/mnt/[^/]+|/"}, "device", "$1", "device", "/dev/(sd[a-z]+)[0-9]+")) or on(device) label_replace((smartctl_read_total_uncorrected_errors - min_over_time(smartctl_read_total_uncorrected_errors[24h])) + on(device) (smartctl_write_total_uncorrected_errors - min_over_time(smartctl_write_total_uncorrected_errors[24h])), "mountpoint", "unmounted", "", "")
-        instant: true
-    - refId: C
-      datasourceUid: __expr__
-      model:
-        refId: C
-        type: threshold
-        expression: A
-        conditions:
-        - evaluator:
-            type: gt
-            params:
-            - 0
-    for: 0s
-    noDataState: OK
-    execErrState: Error
-    labels:
-      severity: critical
-    annotations:
-      summary: "{{ .Labels.mountpoint }} ({{ .Labels.device }}): {{ .Values.A.Value }} new uncorrected read/write errors in the last 24h"
-      description: The drive failed to read or write data even after retries. Treat as failing.
   - uid: disk-missing
     title: Disk missing
     condition: C

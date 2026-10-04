@@ -1790,6 +1790,454 @@
     },
     {
       "type": "row",
+      "title": "Self-tests",
+      "id": 27,
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 54
+      }
+    },
+    {
+      "type": "table",
+      "title": "SMART self-test results",
+      "id": 28,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 14,
+        "x": 0,
+        "y": 55
+      },
+      "description": "From each drive's own self-test log (scripts/smart-selftest-metrics.sh, hourly). Short tests run Saturdays; each drive gets a long test once a month (schedule in maintenance-notes.md). Ages count power-on time. A long test older than ~45 days means one was missed or aborted. 'Failed in log' counts failures among the last ~20 tests the drive remembers.",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "refId": "A",
+          "expr": "(smart_selftest_last_long_status) * on(device) group_left(mountpoint) group by (device, mountpoint) (label_replace(node_filesystem_size_bytes{device=~\"/dev/sd[a-z]+[0-9]+\", mountpoint=~\"/mnt/[^/]+|/\"}, \"device\", \"$1\", \"device\", \"/dev/(sd[a-z]+)[0-9]+\")) or on(device) label_replace(smart_selftest_last_long_status, \"mountpoint\", \"unmounted\", \"\", \"\")",
+          "legendFormat": "{{mountpoint}} ({{device}})",
+          "format": "table",
+          "instant": true,
+          "range": false
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "refId": "B",
+          "expr": "smart_selftest_last_long_age_seconds",
+          "legendFormat": "{{mountpoint}} ({{device}})",
+          "format": "table",
+          "instant": true,
+          "range": false
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "refId": "C",
+          "expr": "smart_selftest_last_short_status",
+          "legendFormat": "{{mountpoint}} ({{device}})",
+          "format": "table",
+          "instant": true,
+          "range": false
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "refId": "D",
+          "expr": "smart_selftest_last_short_age_seconds",
+          "legendFormat": "{{mountpoint}} ({{device}})",
+          "format": "table",
+          "instant": true,
+          "range": false
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "refId": "E",
+          "expr": "smart_selftest_failed",
+          "legendFormat": "{{mountpoint}} ({{device}})",
+          "format": "table",
+          "instant": true,
+          "range": false
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "refId": "F",
+          "expr": "smart_selftest_running",
+          "legendFormat": "{{mountpoint}} ({{device}})",
+          "format": "table",
+          "instant": true,
+          "range": false
+        }
+      ],
+      "transformations": [
+        {
+          "id": "joinByField",
+          "options": {
+            "byField": "device",
+            "mode": "outer"
+          }
+        },
+        {
+          "id": "filterFieldsByName",
+          "options": {
+            "include": {
+              "names": [
+                "mountpoint",
+                "device",
+                "Value #A",
+                "Value #B",
+                "Value #C",
+                "Value #D",
+                "Value #E",
+                "Value #F"
+              ]
+            }
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "indexByName": {
+              "mountpoint": 0,
+              "device": 1,
+              "Value #A": 2,
+              "Value #B": 3,
+              "Value #C": 4,
+              "Value #D": 5,
+              "Value #E": 6,
+              "Value #F": 7
+            },
+            "renameByName": {
+              "mountpoint": "Mount",
+              "device": "Device",
+              "Value #A": "Last long",
+              "Value #B": "Long test age",
+              "Value #C": "Last short",
+              "Value #D": "Short test age",
+              "Value #E": "Failed in log",
+              "Value #F": "Now"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Last long"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "-1": {
+                        "text": "none logged",
+                        "index": 0
+                      },
+                      "0": {
+                        "text": "passed",
+                        "color": "green",
+                        "index": 1
+                      },
+                      "1": {
+                        "text": "FAILED",
+                        "color": "red",
+                        "index": 2
+                      },
+                      "2": {
+                        "text": "aborted",
+                        "color": "orange",
+                        "index": 3
+                      },
+                      "3": {
+                        "text": "running",
+                        "color": "blue",
+                        "index": 4
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Last short"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "-1": {
+                        "text": "none logged",
+                        "index": 0
+                      },
+                      "0": {
+                        "text": "passed",
+                        "color": "green",
+                        "index": 1
+                      },
+                      "1": {
+                        "text": "FAILED",
+                        "color": "red",
+                        "index": 2
+                      },
+                      "2": {
+                        "text": "aborted",
+                        "color": "orange",
+                        "index": 3
+                      },
+                      "3": {
+                        "text": "running",
+                        "color": "blue",
+                        "index": 4
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Long test age"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "s"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "value": null,
+                      "color": "text"
+                    },
+                    {
+                      "value": 3888000,
+                      "color": "orange"
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Short test age"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "s"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Failed in log"
+            },
+            "properties": [
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "value": null,
+                      "color": "green"
+                    },
+                    {
+                      "value": 1,
+                      "color": "red"
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Now"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "0": {
+                        "text": "-",
+                        "index": 0
+                      },
+                      "1": {
+                        "text": "testing",
+                        "color": "blue",
+                        "index": 1
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "sortBy": [
+          {
+            "displayName": "Mount",
+            "desc": false
+          }
+        ]
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Failed self-tests over time",
+      "id": 29,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 10,
+        "x": 14,
+        "y": 55
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "spanNulls": true,
+            "lineInterpolation": "stepAfter"
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "Failed tests in each drive's self-test log. One failure is a data point; a count that keeps climbing month after month means plan a replacement. Compare with 'Sector problems over time' and 'Grown defect list over time'.",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "refId": "A",
+          "expr": "(smart_selftest_failed) * on(device) group_left(mountpoint) group by (device, mountpoint) (label_replace(node_filesystem_size_bytes{device=~\"/dev/sd[a-z]+[0-9]+\", mountpoint=~\"/mnt/[^/]+|/\"}, \"device\", \"$1\", \"device\", \"/dev/(sd[a-z]+)[0-9]+\")) or on(device) label_replace(smart_selftest_failed, \"mountpoint\", \"unmounted\", \"\", \"\")",
+          "legendFormat": "{{mountpoint}} ({{device}})",
+          "format": "time_series"
+        }
+      ]
+    },
+    {
+      "type": "row",
       "title": "Activity",
       "id": 24,
       "collapsed": false,
@@ -1797,7 +2245,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 54
+        "y": 62
       }
     },
     {
@@ -1812,7 +2260,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 55
+        "y": 63
       },
       "targets": [
         {
@@ -1880,7 +2328,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 55
+        "y": 63
       },
       "targets": [
         {
