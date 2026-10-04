@@ -24,3 +24,7 @@ contactPoints:
         settings:
           url: $HEALTHCHECKS_URL
           httpMethod: POST
+          # Short body instead of Grafana's full alert JSON, which
+          # healthchecks.io shows as the "Last Ping Body".
+          payload:
+            template: 'Grafana heartbeat OK'
