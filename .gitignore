@@ -5,8 +5,5 @@ adguard/work/
 # Caddy certificate and runtime state
 caddy/data/
 
-# Personal notes, not part of the repo
-*.md
-!README.md
-
 logs/
+docs/
