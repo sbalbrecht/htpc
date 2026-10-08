@@ -68,7 +68,12 @@ apt-get "${APT_OPTS[@]}" autoremove --purge >> "$LOG" 2>&1 || log "autoremove fa
 # Containers: pull new images and recreate whatever changed.
 cd "$REPO" || fail "cannot cd to $REPO"
 log "Updating containers..."
-docker compose pull --quiet >> "$LOG" 2>&1 || fail "docker compose pull failed"
+for i in 1 2 3; do
+  docker compose pull --quiet >> "$LOG" 2>&1 && break
+  (( i < 3 )) || fail "docker compose pull failed"
+  log "docker compose pull failed, retrying in 60s..."
+  sleep 60
+done
 docker compose up -d >> "$LOG" 2>&1 || fail "docker compose up failed"
 
 log "Waiting ${SETTLE}s for containers to settle..."
