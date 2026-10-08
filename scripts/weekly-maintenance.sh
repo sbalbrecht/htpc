@@ -94,7 +94,7 @@ for hook in "$HOOK_DIR"/*; do
   [[ -f "$hook" && -x "$hook" ]] || continue
   name=$(basename "$hook")
   log "Running hook $name..."
-  if timeout "$HOOK_TIMEOUT" "$hook" >> "$LOG" 2>&1; then
+  if timeout "$HOOK_TIMEOUT" "$hook" < /dev/null >> "$LOG" 2>&1; then
     log "Hook $name finished."
   else
     log "Hook $name FAILED (exit $?)."
