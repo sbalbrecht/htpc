@@ -10,7 +10,7 @@ secrets:
   # These files must exist for Grafana alerting
   discord_webhook:
     # Contains Discord webhook URL for alerts
-    file: /host/discord_webhook.txt
+    file: /host/discord_webhook_maintainer.txt
   healthchecks_url:
     # Contains healthchecks.io ping URL (dead-man's switch)
     file: /host/healthchecks_url.txt

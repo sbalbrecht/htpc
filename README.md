@@ -80,18 +80,18 @@ Suggested host dashboard: *Node Exporter Full* (grafana.com ID 1860) via *Dashbo
 ### Alerting
 Grafana alerts are provisioned from `grafana/provisioning/alerting/`: rules (`rules.yml`), destinations (`contact-points.yml`), routing and repeat intervals (`policies.yml`) and the Discord message format (`templates.yml`). They are read-only in the Grafana UI; edit the files and run `docker compose restart grafana`.
 
-* **Discord** receives the alerts: critical alerts repeat every 4 hours while firing, warnings once a day, plus a message when each clears.
-* **healthchecks.io** is a dead-man's switch. An always-firing *Heartbeat* alert pings it every ~5 minutes; if the pings stop (server down, internet down, Grafana or Prometheus broken), healthchecks.io notifies you.
+* **Discord** receives the alerts in a private maintainer channel: critical alerts repeat every 4 hours while firing, warnings once a day, plus a message when each clears.
+* **healthchecks.io** is a dead-man's switch. An always-firing *Heartbeat* alert pings it every ~5 minutes; if the pings stop (server down, internet down, Grafana or Prometheus broken), healthchecks.io notifies the shared Discord channel.
 
 Both URLs are Docker secrets, like the VPN credentials, and must exist before Grafana will start:
-1. Discord: *Server Settings > Integrations > Webhooks > New Webhook*, pick a channel, copy the URL.
-2. healthchecks.io: create a check with *Period* 5 minutes and *Grace* 10 minutes, copy its ping URL (`https://hc-ping.com/...`), and add the notification method you want under *Integrations*.
+1. Discord: *Server Settings > Integrations > Webhooks > New Webhook*, pick the maintainer channel, copy the URL.
+2. healthchecks.io: create a check with *Period* 5 minutes and *Grace* 10 minutes, copy its ping URL (`https://hc-ping.com/...`), and add a Discord integration for the shared channel under *Integrations*.
 3. Save them:
    ```
-   echo 'https://discord.com/api/webhooks/...' | sudo tee /host/discord_webhook.txt >/dev/null
+   echo 'https://discord.com/api/webhooks/...' | sudo tee /host/discord_webhook_maintainer.txt >/dev/null
    echo 'https://hc-ping.com/...' | sudo tee /host/healthchecks_url.txt >/dev/null
-   sudo chown 1000:1000 /host/discord_webhook.txt /host/healthchecks_url.txt
-   sudo chmod 600 /host/discord_webhook.txt /host/healthchecks_url.txt
+   sudo chown 1000:1000 /host/discord_webhook_maintainer.txt /host/healthchecks_url.txt
+   sudo chmod 600 /host/discord_webhook_maintainer.txt /host/healthchecks_url.txt
    ```
 
 ## Maintenance
