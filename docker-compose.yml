@@ -215,7 +215,8 @@ services:
 
   # Monitoring: SMART health of each disk. Needs raw device access.
   smartctl-exporter:
-    image: prometheuscommunity/smartctl-exporter
+    # v0.15.0 returns HTTP 500 for these drives
+    image: prometheuscommunity/smartctl-exporter:v0.14.0
     container_name: smartctl-exporter
     restart: unless-stopped
     privileged: true
